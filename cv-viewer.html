@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>CV Viewer</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=Roboto:wght@300;400;500;700;900&family=Open+Sans:wght@300;400;500;600;700;800&family=Lato:wght@300;400;700;900&family=Poppins:wght@300;400;500;600;700;800&family=Montserrat:wght@300;400;500;600;700;800&family=Raleway:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"/>
+<style>
+:root{--bg:#0b0b14;--surface:#12121c;--border:rgba(255,255,255,0.07);--text:#dde0f0;--muted:#44445a;--cyan:#00f5d4;--red:#ff4d6d;}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;overflow:hidden;}
+body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;display:flex;flex-direction:column;}
+
+/* topbar */
+.topbar{display:flex;align-items:center;gap:12px;padding:11px 20px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;flex-wrap:wrap;}
+.logo{font-family:'Syne',sans-serif;font-weight:800;font-size:1rem;color:var(--cyan);letter-spacing:-.02em;}
+.logo span{color:#f700ff;}
+.sep{width:1px;height:18px;background:var(--border);}
+.hint{font-size:.65rem;color:var(--muted);}
+.tr{display:flex;gap:8px;align-items:center;margin-left:auto;flex-wrap:wrap;}
+
+/* zoom */
+.zw{display:flex;align-items:center;gap:5px;}
+.zl{font-size:.62rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;}
+.zb{width:24px;height:24px;border-radius:3px;border:1px solid var(--border);background:transparent;color:var(--text);font-size:.85rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.2s;}
+.zb:hover{border-color:var(--cyan);color:var(--cyan);}
+.zv{font-family:'JetBrains Mono',monospace;font-size:.68rem;color:var(--cyan);min-width:36px;text-align:center;}
+
+/* btn */
+.btn{padding:6px 13px;font-size:.68rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;border-radius:3px;border:none;cursor:pointer;transition:.2s;font-family:'Inter',sans-serif;}
+.bg{background:transparent;border:1px solid var(--border);color:var(--muted);}
+.bg:hover{border-color:var(--cyan);color:var(--cyan);}
+.bp{background:var(--cyan);color:#0b0b14;}
+.bp:hover{background:#00dcc0;}
+
+/* layout */
+.ab{display:grid;grid-template-columns:310px 1fr;flex:1;overflow:hidden;}
+
+/* json panel */
+.jp{background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;}
+.ph{padding:10px 15px;border-bottom:1px solid var(--border);font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:7px;flex-shrink:0;}
+.phd{width:5px;height:5px;border-radius:50%;background:var(--cyan);}
+#ji{flex:1;resize:none;padding:14px;background:transparent;border:none;outline:none;color:#7ecfb5;font-family:'JetBrains Mono',monospace;font-size:.71rem;line-height:1.8;overflow-y:auto;tab-size:2;}
+#ji::placeholder{color:var(--muted);font-size:.68rem;}
+.jf{padding:8px 15px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-shrink:0;}
+.st{font-size:.62rem;font-family:'JetBrains Mono',monospace;transition:color .2s;}
+.st.ok{color:var(--cyan);}.st.er{color:var(--red);}.st.id{color:var(--muted);}
+.sc{font-size:.6rem;color:var(--muted);font-family:'JetBrains Mono',monospace;}
+
+/* preview */
+.pp{overflow:auto;background:#181824;display:flex;align-items:flex-start;justify-content:center;padding:36px 28px;}
+.pi{display:flex;flex-direction:column;align-items:center;}
+
+/* canvas */
+.cvw{position:relative;transform-origin:top center;transition:transform .2s;box-shadow:0 24px 80px rgba(0,0,0,.7);flex-shrink:0;overflow:hidden;}
+.cvs{position:absolute;}
+.cvs:hover{outline:1.5px dashed rgba(0,245,212,.4);z-index:9999!important;}
+
+/* empty */
+.em{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center;padding:80px 28px;color:var(--muted);}
+.ei{font-size:2.6rem;opacity:.18;}
+.et{font-family:'Syne',sans-serif;font-size:.9rem;color:var(--text);opacity:.3;}
+.es{font-size:.76rem;line-height:1.8;max-width:250px;}
+
+@media print{
+  .topbar,.jp{display:none!important;}
+  .ab{display:block!important;}
+  .pp{padding:0!important;background:#fff!important;overflow:visible!important;display:block!important;}
+  .cvw{transform:none!important;box-shadow:none!important;}
+  html,body{height:auto;overflow:visible!important;}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo">cv<span>.</span>render</div>
+  <div class="sep"></div>
+  <span class="hint">Paste your JSON → renders exactly as your Flutter template</span>
+  <div class="tr">
+    <div class="zw">
+      <span class="zl">Zoom</span>
+      <button class="zb" onclick="dz(-0.1)">−</button>
+      <span class="zv" id="zv">100%</span>
+      <button class="zb" onclick="dz(+0.1)">+</button>
+      <button class="zb" style="width:auto;padding:0 7px;font-size:.58rem;letter-spacing:.06em;" onclick="fz()">FIT</button>
+    </div>
+    <button class="btn bg" onclick="ls()">Sample JSON</button>
+    <button class="btn bp" onclick="window.print()">⬇ PDF</button>
+  </div>
+</div>
+
+<div class="ab">
+  <div class="jp">
+    <div class="ph"><span class="phd"></span>Your CV JSON</div>
+    <textarea id="ji" spellcheck="false" placeholder='Paste your CV JSON here…
+
+Your exact structure is supported:
+{
+  "data": {
+    "canvas": {
+      "width": 595,
+      "height": 842,
+      "backgroundColor": "#FFFFFF"
+    },
+    "sections": [
+      {
+        "id": "...",
+        "type": "shape | image | textBlock
+                 | listBlock | experienceBlock
+                 | educationBlock | skillsBlock
+                 | projectsBlock | divider | text",
+        "transform": {
+          "x": 0, "y": 0,
+          "width": 100, "height": 100,
+          "zIndex": 1, "rotation": 0
+        },
+        "style": { ... },
+        "content": { ... }
+      }
+    ]
+  }
+}'></textarea>
+    <div class="jf">
+      <div class="st id" id="st">Waiting for JSON…</div>
+      <div class="sc" id="sc"></div>
+    </div>
+  </div>
+
+  <div class="pp" id="pp">
+    <div class="pi" id="pi">
+      <div class="em">
+        <div class="ei">🖼️</div>
+        <div class="et">No CV loaded</div>
+        <p class="es">Paste your Flutter app JSON or click <strong>Sample JSON</strong> to preview.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── state ──────────────────────────────────────────────────────────
+let scale = 1;
+
+// ── zoom ───────────────────────────────────────────────────────────
+function dz(d){scale=Math.max(.2,Math.min(2.5,scale+d));az();}
+function fz(){
+  const pp=document.getElementById('pp');
+  const w=document.querySelector('.cvw');
+  if(!w)return;
+  const aw=pp.clientWidth-60, ah=pp.clientHeight-72;
+  const cw=+w.dataset.w, ch=+w.dataset.h;
+  scale=Math.min(1,aw/cw,ah/ch);
+  az();
+}
+function az(){
+  document.getElementById('zv').textContent=Math.round(scale*100)+'%';
+  const w=document.querySelector('.cvw');
+  if(w)w.style.transform=`scale(${scale})`;
+}
+
+// ── input ──────────────────────────────────────────────────────────
+const $i=document.getElementById('ji');
+const $s=document.getElementById('st');
+const $c=document.getElementById('sc');
+
+$i.addEventListener('input',()=>{
+  const raw=$i.value.trim();
+  if(!raw){ss('id','Waiting for JSON…');$c.textContent='';empty();return;}
+  try{
+    const json=JSON.parse(raw);
+    const data=resolve(json);
+    const secs=data.sections||[];
+    ss('ok',`✓ Valid — ${secs.length} section${secs.length!==1?'s':''}`);
+    $c.textContent=data.canvas?`${data.canvas.width}×${data.canvas.height}px`:'';
+    render(data);
+  }catch(e){
+    ss('er','✗ '+e.message);
+    $c.textContent='';
+    empty();
+  }
+});
+
+function ss(cls,msg){$s.className='st '+cls;$s.textContent=msg;}
+function empty(){
+  document.getElementById('pi').innerHTML=`
+    <div class="em">
+      <div class="ei">🖼️</div>
+      <div class="et">No CV loaded</div>
+      <p class="es">Paste your JSON or click <strong>Sample JSON</strong>.</p>
+    </div>`;
+}
+
+// unwrap any outer envelope — supports { data:{canvas,sections} } or flat
+function resolve(j){
+  if(j&&j.data&&(j.data.canvas||j.data.sections))return j.data;
+  if(j&&j.canvas)return j;
+  if(j&&j.sections)return j;
+  for(const k of Object.keys(j||{})){if(j[k]&&j[k].sections)return j[k];}
+  return j;
+}
+
+// ── main render ────────────────────────────────────────────────────
+function render(data){
+  const cv=data.canvas||{width:595,height:842,backgroundColor:'#FFFFFF'};
+  // sort by zIndex so layering is correct
+  const secs=[...(data.sections||[])].sort((a,b)=>((a.transform||{}).zIndex||0)-((b.transform||{}).zIndex||0));
+
+  const wrap=mk('div');
+  wrap.className='cvw';
+  wrap.dataset.w=cv.width;
+  wrap.dataset.h=cv.height;
+  wrap.style.cssText=`width:${cv.width}px;min-height:${cv.height}px;background:${cv.backgroundColor||'#fff'};transform:scale(${scale});`;
+
+  secs.forEach(sec=>{
+    if(sec.meta&&sec.meta.isHidden===true)return;
+    const el=buildSec(sec);
+    if(el)wrap.appendChild(el);
+  });
+
+  const pi=document.getElementById('pi');
+  pi.innerHTML='';
+  pi.appendChild(wrap);
+  setTimeout(fz,60);
+}
+
+// ── section builder ────────────────────────────────────────────────
+function buildSec(sec){
+  const tf=sec.transform||{};
+  const st=sec.style||{};
+  const co=sec.content||{};
+
+  const wrap=mk('div');
+  wrap.className='cvs';
+  wrap.title=`${sec.type||'?'} · ${sec.id||''}`;
+  wrap.style.left=p(tf.x);
+  wrap.style.top=p(tf.y);
+  wrap.style.width=p(tf.width);
+  wrap.style.minHeight=p(tf.height);
+  wrap.style.zIndex=tf.zIndex||1;
+  if(tf.rotation)wrap.style.transform=`rotate(${tf.rotation}deg)`;
+  if(st.opacity!==undefined)wrap.style.opacity=st.opacity;
+  if(st.shadow){const s=st.shadow;wrap.style.boxShadow=`${s.offsetX||0}px ${s.offsetY||0}px ${s.blur||0}px ${s.color||'transparent'}`;}
+
+  let inner=null;
+  const type=(sec.type||'').toLowerCase();
+  if     (type==='image')           inner=bImage(co,st,tf);
+  else if(type==='textblock')       inner=bTextBlock(co,st,tf);
+  else if(type==='text')            inner=bText(co,st,tf);
+  else if(type==='listblock')       inner=bList(co,st,tf);
+  else if(type==='experienceblock') inner=bExp(co,st,tf);
+  else if(type==='educationblock')  inner=bEdu(co,st,tf);
+  else if(type==='skillsblock')     inner=bSkills(co,st,tf);
+  else if(type==='projectsblock')   inner=bProjects(co,st,tf);
+  else if(type==='shape')           inner=bShape(co,st,tf);
+  else if(type==='divider')         inner=bDivider(co,st,tf);
+  else if(type==='icon')            inner=bIcon(co,st,tf);
+  else                              inner=bUnknown(sec);
+
+  if(inner)wrap.appendChild(inner);
+  return wrap;
+}
+
+// ── IMAGE ──────────────────────────────────────────────────────────
+function bImage(co,st,tf){
+  const d=mk('div');
+  ap(d,{
+    width:p(tf.width),height:p(tf.height),
+    borderRadius:p(st.borderRadius||0),
+    border:st.borderWidth?`${st.borderWidth}px solid ${st.borderColor||'transparent'}`:'none',
+    background:st.backgroundColor||'#eee',
+    overflow:'hidden',display:'flex',alignItems:'center',justifyContent:'center',
+  });
+  if(co.src){
+    const img=mk('img');
+    img.src=co.src;img.alt=co.alt||'';
+    ap(img,{width:'100%',height:'100%',objectFit:'cover',display:'block'});
+    img.onerror=()=>{img.replaceWith(avatarPH());};
+    d.appendChild(img);
+  }else{d.appendChild(avatarPH());}
+  return d;
+}
+function avatarPH(){const s=mk('span');s.textContent='👤';ap(s,{fontSize:'2rem',opacity:'.25'});return s;}
+
+// ── TEXT BLOCK ─────────────────────────────────────────────────────
+function bTextBlock(co,st,tf){
+  const d=mk('div');
+  ap(d,{width:p(tf.width),textAlign:st.alignment||'left'});
+  if(co.title!=null)   d.appendChild(txt(co.title,   st.title||{}));
+  if(co.subtitle!=null){const e=txt(co.subtitle,st.subtitle||{});e.style.marginTop='4px';d.appendChild(e);}
+  if(co.body!=null)    {const e=txt(co.body,    st.body||{});    e.style.marginTop='8px';d.appendChild(e);}
+  return d;
+}
+
+// ── SIMPLE TEXT ────────────────────────────────────────────────────
+function bText(co,st,tf){
+  const d=mk('div');ap(d,{width:p(tf.width)});
+  d.appendChild(txt(co.text||co.value||co.title||'',st));
+  return d;
+}
+
+// ── LIST BLOCK (contact/links) ─────────────────────────────────────
+function bList(co,st,tf){
+  const d=mk('div');ap(d,{width:p(tf.width)});
+  if(co.title)d.appendChild(head(co.title,st.title||{}));
+  const ICONS={phone:'📞',email:'✉️',location_on:'📍',language:'🌐',link:'🔗',work:'💼',school:'🎓',person:'👤',star:'⭐',code:'💻',build:'🔧',brush:'🎨'};
+  (co.items||[]).forEach(item=>{
+    const row=mk('div');
+    ap(row,{display:'flex',alignItems:'flex-start',gap:'7px',marginBottom:p(st.spacing||7)});
+    if(item.icon){
+      const ic=mk('span');
+      ic.textContent=ICONS[item.icon]||'·';
+      ap(ic,{fontSize:p((st.icon&&st.icon.size)||11),color:(st.icon&&st.icon.color)||'#E94560',flexShrink:'0',marginTop:'1px',lineHeight:'1'});
+      row.appendChild(ic);
+    }
+    const te=txt(item.text||'',st.itemText||{});
+    if(item.link){const a=mk('a');a.href=item.link;a.target='_blank';ap(a,{color:'inherit',textDecoration:'none'});a.appendChild(te);row.appendChild(a);}
+    else row.appendChild(te);
+    d.appendChild(row);
+  });
+  return d;
+}
+
+// ── EXPERIENCE BLOCK ───────────────────────────────────────────────
+function bExp(co,st,tf){
+  const d=mk('div');ap(d,{width:p(tf.width)});
+  if(co.title)d.appendChild(head(co.title,st.title||{}));
+  (co.items||[]).forEach(item=>{
+    const b=mk('div');
+    const ac=st.accentColor||st.lineColor||'#E94560';
+    ap(b,{marginBottom:p((st.spacing||10)+6),paddingLeft:'10px',borderLeft:`2px solid ${ac}`});
+    const role=item.role||item.title||item.position||'';
+    if(role)b.appendChild(txt(role,st.role||{fontSize:13,fontWeight:600,color:'#111'}));
+    if(item.company||item.organization){
+      const row=mk('div');ap(row,{display:'flex',justifyContent:'space-between',alignItems:'baseline',marginTop:'2px'});
+      row.appendChild(txt(item.company||item.organization||'',st.company||{fontSize:12,color:'#555'}));
+      if(item.duration){
+        const dur=typeof item.duration==='object'?`${item.duration.start||''} – ${item.duration.end||''}`:item.duration;
+        row.appendChild(txt(dur,st.duration||{fontSize:11,color:'#888'}));
+      }
+      b.appendChild(row);
+    }
+    if(item.location){const e=txt('📍 '+item.location,{fontSize:10,color:'#999'});e.style.marginTop='1px';b.appendChild(e);}
+    const dets=item.details||item.bullets||item.responsibilities||item.achievements||[];
+    if(dets.length){
+      const ul=mk('ul');ap(ul,{marginTop:'5px',paddingLeft:'14px',listStyleType:'disc'});
+      dets.forEach(t=>{const li=mk('li');ats(li,st.details||{fontSize:11,color:'#444',lineHeight:1.5});li.style.marginBottom='3px';li.textContent=t;ul.appendChild(li);});
+      b.appendChild(ul);
+    }
+    if((item.description||item.desc)&&!dets.length){const e=txt(item.description||item.desc,st.details||{fontSize:11,color:'#444',lineHeight:1.5});e.style.marginTop='4px';b.appendChild(e);}
+    d.appendChild(b);
+  });
+  return d;
+}
+
+// ── EDUCATION BLOCK ────────────────────────────────────────────────
+function bEdu(co,st,tf){
+  const d=mk('div');ap(d,{width:p(tf.width)});
+  if(co.title)d.appendChild(head(co.title,st.title||{}));
+  (co.items||[]).forEach(item=>{
+    const b=mk('div');ap(b,{marginBottom:p((st.spacing||10)+4)});
+    const deg=item.degree||item.qualification||item.title||item.name||'';
+    if(deg)b.appendChild(txt(deg,st.degree||{fontSize:13,fontWeight:600,color:'#111'}));
+    const sc=item.school||item.institution||item.university||'';
+    if(sc){const e=txt(sc,st.school||{fontSize:12,color:'#555'});e.style.marginTop='2px';b.appendChild(e);}
+    const yr=item.year||item.duration||item.period||'';
+    if(yr){const e=txt(yr,st.year||{fontSize:11,color:'#888'});e.style.marginTop='2px';b.appendChild(e);}
+    if(item.description||item.desc){const e=txt(item.description||item.desc,{fontSize:11,color:'#666',lineHeight:1.5});e.style.marginTop='4px';b.appendChild(e);}
+    d.appendChild(b);
+  });
+  return d;
+}
+
+// ── SKILLS BLOCK ───────────────────────────────────────────────────
+function bSkills(co,st,tf){
+  const d=mk('div');ap(d,{width:p(tf.width)});
+  if(co.title)d.appendChild(head(co.title,st.title||{}));
+  const items=co.items||co.skills||[];
+  const dtype=st.displayType||co.displayType||'bar';
+  const ac=st.barColor||st.accentColor||'#E94560';
+
+  if(dtype==='tag'){
+    const cl=mk('div');ap(cl,{display:'flex',flexWrap:'wrap',gap:'6px'});
+    items.forEach(item=>{
+      const name=typeof item==='string'?item:(item.name||item.skill||'');
+      const t=mk('span');
+      ap(t,{padding:'3px 9px',borderRadius:p(st.tagRadius||3),background:st.tagBg||`${ac}18`,color:st.tagColor||ac,
+        fontSize:p((st.itemText&&st.itemText.fontSize)||11),fontFamily:(st.itemText&&st.itemText.fontFamily)||'Inter',fontWeight:'500'});
+      t.textContent=name;cl.appendChild(t);
+    });
+    d.appendChild(cl);return d;
+  }
+
+  items.forEach(item=>{
+    const name=typeof item==='string'?item:(item.name||item.skill||'');
+    const level=typeof item==='object'?(item.level!==undefined?item.level:(item.proficiency!==undefined?item.proficiency:75)):75;
+    const row=mk('div');ap(row,{marginBottom:p(st.spacing||9)});
+    const lr=mk('div');ap(lr,{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'4px'});
+    lr.appendChild(txt(name,st.itemText||{fontSize:12,fontWeight:500,color:'#333'}));
+    if(dtype==='dot'){
+      const total=st.dotCount||5,filled=Math.round(level/100*total);
+      const dots=mk('div');ap(dots,{display:'flex',gap:'4px'});
+      for(let i=0;i<total;i++){const dot=mk('span');ap(dot,{display:'inline-block',width:'7px',height:'7px',borderRadius:'50%',background:i<filled?ac:(st.trackColor||'#ddd')});dots.appendChild(dot);}
+      lr.appendChild(dots);row.appendChild(lr);
+    }else{
+      lr.appendChild(txt(level+'%',{fontSize:10,color:'#aaa',fontFamily:'Inter'}));
+      row.appendChild(lr);
+      const tr=mk('div');ap(tr,{height:p(st.barHeight||4),background:st.trackColor||'#eee',borderRadius:'3px',overflow:'hidden'});
+      const fi=mk('div');ap(fi,{height:'100%',width:level+'%',background:ac,borderRadius:'3px'});
+      tr.appendChild(fi);row.appendChild(tr);
+    }
+    d.appendChild(row);
+  });
+  return d;
+}
+
+// ── PROJECTS BLOCK ─────────────────────────────────────────────────
+function bProjects(co,st,tf){
+  const d=mk('div');ap(d,{width:p(tf.width)});
+  if(co.title)d.appendChild(head(co.title,st.title||{}));
+  (co.items||co.projects||[]).forEach(item=>{
+    const b=mk('div');
+    const ac=st.accentColor||'';
+    ap(b,{marginBottom:p((st.spacing||10)+4),padding:p(st.cardPadding||0),background:st.cardBg||'transparent',borderRadius:p(st.cardRadius||0),
+      borderLeft:ac?`2px solid ${ac}`:'none',paddingLeft:ac?'8px':'0'});
+    const name=item.name||item.title||'';
+    if(name)b.appendChild(txt(name,st.name||{fontSize:13,fontWeight:600,color:'#111'}));
+    const tags=item.tags||item.technologies||item.tech||[];
+    if(tags.length){
+      const tr=mk('div');ap(tr,{display:'flex',flexWrap:'wrap',gap:'4px',marginTop:'5px'});
+      tags.forEach(t=>{const tg=mk('span');ap(tg,{fontSize:'10px',padding:'2px 7px',background:st.tagBg||'#f0f0f0',color:st.tagColor||'#555',borderRadius:'3px'});tg.textContent=t;tr.appendChild(tg);});
+      b.appendChild(tr);
+    }
+    if(item.description||item.desc){const e=txt(item.description||item.desc,st.description||{fontSize:11,color:'#555',lineHeight:1.6});e.style.marginTop='5px';b.appendChild(e);}
+    d.appendChild(b);
+  });
+  return d;
+}
+
+// ── SHAPE ──────────────────────────────────────────────────────────
+function bShape(co,st,tf){
+  const d=mk('div');
+  ap(d,{
+    width:p(tf.width),height:p(tf.height),
+    background:st.backgroundColor||st.fillColor||'transparent',
+    borderRadius:p(st.borderRadius||0),
+    border:st.borderWidth?`${st.borderWidth}px solid ${st.borderColor||'transparent'}`:'none',
+    opacity:st.opacity!==undefined?st.opacity:1,
+  });
+  return d;
+}
+
+// ── DIVIDER ────────────────────────────────────────────────────────
+function bDivider(co,st,tf){
+  const d=mk('div');
+  ap(d,{width:p(tf.width),height:p(st.thickness||1),background:st.color||st.backgroundColor||'#e0e0e0'});
+  return d;
+}
+
+// ── ICON ───────────────────────────────────────────────────────────
+function bIcon(co,st,tf){
+  const d=mk('div');
+  d.textContent=co.icon||co.text||'●';
+  ap(d,{fontSize:p(st.size||tf.width||14),color:st.color||'#333',textAlign:'center'});
+  return d;
+}
+
+// ── UNKNOWN ────────────────────────────────────────────────────────
+function bUnknown(sec){
+  const d=mk('div');
+  ap(d,{padding:'5px 8px',fontSize:'9px',fontFamily:'JetBrains Mono,monospace',color:'rgba(0,245,212,.35)',
+    border:'1px dashed rgba(0,245,212,.15)',borderRadius:'3px',background:'rgba(0,245,212,.02)'});
+  d.textContent=`[${sec.type||'?'}] ${sec.id||''}`;
+  return d;
+}
+
+// ── STYLE HELPERS ──────────────────────────────────────────────────
+// Apply a JSON style object's text properties to a DOM element
+function ats(el,s){
+  el.style.fontFamily   =s.fontFamily   ||'Inter';
+  el.style.fontSize     =p(s.fontSize   ||12);
+  el.style.fontWeight   =s.fontWeight   ||400;
+  el.style.color        =s.color        ||'#222';
+  el.style.lineHeight   =s.lineHeight   ||1.4;
+  if(s.letterSpacing!==undefined)el.style.letterSpacing=s.letterSpacing+'em';
+  if(s.textTransform) el.style.textTransform=s.textTransform;
+  if(s.textAlign)     el.style.textAlign    =s.textAlign;
+  if(s.fontStyle)     el.style.fontStyle    =s.fontStyle;
+  if(s.fontItalic)    el.style.fontStyle    ='italic';
+  if(s.textDecoration)el.style.textDecoration=s.textDecoration;
+  if(s.whiteSpace)    el.style.whiteSpace   =s.whiteSpace;
+}
+
+// Create text element from a JSON style object
+function txt(text,s){
+  const d=mk('div');d.textContent=text||'';ats(d,s);return d;
+}
+
+// Section heading element
+function head(text,s){
+  const d=txt(text,s);
+  d.style.marginBottom='10px';
+  if(s.borderBottom) d.style.borderBottom =s.borderBottom;
+  if(s.paddingBottom)d.style.paddingBottom=p(s.paddingBottom);
+  return d;
+}
+
+// ── DOM utils ──────────────────────────────────────────────────────
+function mk(t){return document.createElement(t);}
+function p(v){return(v!==undefined&&v!==null)?v+'px':'0px';}
+function ap(el,styles){Object.assign(el.style,styles);}
+
+// ── SAMPLE JSON ────────────────────────────────────────────────────
+function ls(){
+  const s={
+    "success":true,"message":"CV loaded successfully","apiVersion":"2.0.0",
+    "data":{
+      "cv":{"id":"cv_001","userId":"user_123","templateId":"template_modern_01","version":"1.0.0"},
+      "canvas":{"width":595,"height":842,"unit":"px","backgroundColor":"#FFFFFF","dpi":300,"margin":{"top":20,"bottom":20,"left":20,"right":20}},
+      "sections":[
+        {"id":"sidebar_bg","type":"shape",
+         "transform":{"x":0,"y":0,"width":195,"height":842,"zIndex":0},
+         "meta":{"isHidden":false},"content":{},
+         "style":{"backgroundColor":"#1a0a2e","borderRadius":0}},
+        {"id":"accent_strip","type":"shape",
+         "transform":{"x":0,"y":0,"width":195,"height":5,"zIndex":1},
+         "meta":{"isHidden":false},"content":{},
+         "style":{"backgroundColor":"#E94560"}},
+        {"id":"profile_image","type":"image",
+         "transform":{"x":37,"y":28,"width":120,"height":120,"rotation":0,"zIndex":2,"lockedAspectRatio":true},
+         "meta":{"isLocked":false,"isHidden":false,"isEditable":true,"isDraggable":true,"isResizable":true,"isRotatable":true},
+         "content":{"src":"","alt":"Profile Picture"},
+         "style":{"borderRadius":60,"borderWidth":3,"borderColor":"#E94560","backgroundColor":"#2a1a3e","opacity":1,"shadow":{"color":"#00000044","blur":10,"offsetX":0,"offsetY":4}}},
+        {"id":"header_text","type":"textBlock",
+         "transform":{"x":215,"y":24,"width":356,"height":130,"rotation":0,"zIndex":2,"lockedAspectRatio":false},
+         "meta":{"isLocked":false,"isHidden":false,"isEditable":true,"isDraggable":true,"isResizable":true,"isRotatable":false},
+         "content":{"title":"RICHARD SANCHEZ","subtitle":"MARKETING MANAGER","body":"Experienced Marketing Manager with 10+ years driving digital marketing, brand strategy and high-performing team leadership."},
+         "style":{"alignment":"left",
+           "title":   {"fontFamily":"Inter","fontSize":22,"fontWeight":800,"color":"#111111","letterSpacing":0.04,"textTransform":"uppercase"},
+           "subtitle":{"fontFamily":"Inter","fontSize":12,"fontWeight":600,"color":"#E94560","letterSpacing":0.15,"textTransform":"uppercase"},
+           "body":    {"fontFamily":"Inter","fontSize":11,"fontWeight":400,"color":"#555555","lineHeight":1.6}}},
+        {"id":"divider_1","type":"divider",
+         "transform":{"x":215,"y":160,"width":356,"height":1,"zIndex":2},
+         "meta":{"isHidden":false},"content":{},
+         "style":{"color":"#dddddd","thickness":1}},
+        {"id":"contact_section","type":"listBlock",
+         "transform":{"x":10,"y":175,"width":174,"height":180,"rotation":0,"zIndex":2},
+         "meta":{"isLocked":false,"isHidden":false,"isEditable":true,"isDraggable":true,"isResizable":true,"isRotatable":false},
+         "content":{"title":"CONTACT","items":[
+           {"id":"phone",   "icon":"phone",       "text":"+123-456-7890", "link":"tel:+1234567890"},
+           {"id":"email",   "icon":"email",       "text":"hello@site.com","link":"mailto:hello@site.com"},
+           {"id":"location","icon":"location_on", "text":"New York, USA", "link":""},
+           {"id":"website", "icon":"language",    "text":"www.site.com",  "link":"https://site.com"}]},
+         "style":{"title":   {"fontFamily":"Inter","fontSize":11,"fontWeight":700,"color":"#E94560","letterSpacing":0.18,"textTransform":"uppercase"},
+                  "itemText":{"fontFamily":"Inter","fontSize":10,"fontWeight":400,"color":"#c0b8d0"},
+                  "icon":{"size":11,"color":"#E94560"},"spacing":9}},
+        {"id":"skills_section","type":"skillsBlock",
+         "transform":{"x":10,"y":380,"width":174,"height":260,"zIndex":2},
+         "meta":{"isHidden":false,"isEditable":true},
+         "content":{"title":"SKILLS","items":[
+           {"name":"Digital Marketing","level":95},
+           {"name":"Brand Strategy",   "level":88},
+           {"name":"Team Leadership",  "level":82},
+           {"name":"Data Analytics",   "level":78},
+           {"name":"Content Creation", "level":85}]},
+         "style":{"title":   {"fontFamily":"Inter","fontSize":11,"fontWeight":700,"color":"#E94560","letterSpacing":0.18,"textTransform":"uppercase"},
+                  "itemText":{"fontFamily":"Inter","fontSize":10,"fontWeight":400,"color":"#c0b8d0"},
+                  "barColor":"#E94560","trackColor":"rgba(255,255,255,0.1)","barHeight":3,"spacing":11,"displayType":"bar"}},
+        {"id":"experience_section","type":"experienceBlock",
+         "transform":{"x":215,"y":175,"width":356,"height":320,"rotation":0,"zIndex":2},
+         "meta":{"isLocked":false,"isHidden":false,"isEditable":true,"isDraggable":true,"isResizable":true,"isRotatable":false},
+         "content":{"title":"WORK EXPERIENCE","items":[
+           {"id":"exp_1","role":"Marketing Manager & Specialist","company":"Borcelle Studio","location":"New York, USA",
+            "duration":{"start":"2030","end":"Present"},
+            "details":["Developed and executed comprehensive marketing strategies.","Led and managed high-performing cross-functional teams.","Increased company revenue by 35% in 18 months."]},
+           {"id":"exp_2","role":"Digital Marketing Lead","company":"Alphaedge Inc.","location":"Boston, USA",
+            "duration":{"start":"2026","end":"2030"},
+            "details":["Managed $2M annual digital advertising budget.","Grew organic traffic by 120% through SEO initiatives."]}]},
+         "style":{"title":   {"fontFamily":"Inter","fontSize":13,"fontWeight":700,"color":"#111111","letterSpacing":0.08,"textTransform":"uppercase"},
+                  "role":    {"fontFamily":"Inter","fontSize":12,"fontWeight":600,"color":"#111111"},
+                  "company": {"fontFamily":"Inter","fontSize":11,"fontWeight":400,"color":"#666666"},
+                  "duration":{"fontFamily":"Inter","fontSize":10,"fontWeight":400,"color":"#999999"},
+                  "details": {"fontFamily":"Inter","fontSize":10,"fontWeight":400,"color":"#444444","lineHeight":1.5},
+                  "accentColor":"#E94560","spacing":14}},
+        {"id":"education_section","type":"educationBlock",
+         "transform":{"x":215,"y":510,"width":356,"height":160,"zIndex":2},
+         "meta":{"isHidden":false,"isEditable":true},
+         "content":{"title":"EDUCATION","items":[
+           {"degree":"Master of Business Administration","school":"New York University","year":"2022 – 2024","description":"Specialization in Marketing & Brand Management."},
+           {"degree":"B.Sc. in Marketing","school":"University of Michigan","year":"2018 – 2022"}]},
+         "style":{"title": {"fontFamily":"Inter","fontSize":13,"fontWeight":700,"color":"#111111","letterSpacing":0.08,"textTransform":"uppercase"},
+                  "degree":{"fontFamily":"Inter","fontSize":12,"fontWeight":600,"color":"#111111"},
+                  "school":{"fontFamily":"Inter","fontSize":11,"fontWeight":400,"color":"#666666"},
+                  "year":  {"fontFamily":"Inter","fontSize":10,"fontWeight":400,"color":"#999999"},
+                  "spacing":12}}
+      ]
+    }
+  };
+  $i.value=JSON.stringify(s,null,2);
+  $i.dispatchEvent(new Event('input'));
+}
+
+// ── URL param (Flutter WebView) ────────────────────────────────────
+// Usage: cv-viewer.html?data=<urlEncodedJSON>
+(function(){
+  try{
+    const d=new URLSearchParams(window.location.search).get('data');
+    if(d){$i.value=decodeURIComponent(d);$i.dispatchEvent(new Event('input'));}
+  }catch(e){}
+})();
+</script>
+</body>
+</html>
