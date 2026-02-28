@@ -1,0 +1,1254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>CV Template Builder</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Syne:wght@700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#0a0a12; --s1:#111118; --s2:#17171f; --s3:#1e1e28;
+  --border:rgba(255,255,255,0.07); --border2:rgba(255,255,255,0.12);
+  --text:#e0e0ee; --muted:#55556a; --cyan:#00f5d4; --mag:#f700ff;
+  --red:#ff4d6d; --yellow:#ffd166; --green:#06d6a0;
+  --sel:#00f5d430; --sel-border:#00f5d4;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;overflow:hidden;}
+body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;display:flex;flex-direction:column;user-select:none;}
+
+/* ── TOPBAR ── */
+.topbar{display:flex;align-items:center;gap:10px;padding:10px 16px;background:var(--s1);border-bottom:1px solid var(--border);flex-shrink:0;z-index:100;}
+.logo{font-family:'Syne',sans-serif;font-weight:800;font-size:.95rem;color:var(--cyan);letter-spacing:-.02em;white-space:nowrap;}
+.logo span{color:var(--mag);}
+.tb-sep{width:1px;height:18px;background:var(--border2);}
+
+/* tool buttons */
+.tool-group{display:flex;gap:4px;}
+.tbtn{display:flex;align-items:center;gap:5px;padding:6px 10px;border-radius:4px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:.68rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;transition:.15s;font-family:'Inter',sans-serif;white-space:nowrap;}
+.tbtn:hover{border-color:var(--cyan);color:var(--cyan);}
+.tbtn.active{background:var(--cyan);color:#0a0a12;border-color:var(--cyan);}
+.tbtn.danger{border-color:var(--red);color:var(--red);}
+.tbtn.danger:hover{background:var(--red);color:#fff;}
+.tbtn.export{background:var(--cyan);color:#0a0a12;border-color:var(--cyan);}
+.tbtn.export:hover{background:#00ddc0;}
+.tbtn .ico{font-size:.9rem;}
+
+.tr{margin-left:auto;display:flex;gap:6px;align-items:center;}
+
+/* zoom */
+.zw{display:flex;align-items:center;gap:4px;}
+.zl{font-size:.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;}
+.zb{width:22px;height:22px;border-radius:3px;border:1px solid var(--border);background:transparent;color:var(--text);font-size:.8rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;}
+.zb:hover{border-color:var(--cyan);color:var(--cyan);}
+.zv{font-family:'JetBrains Mono',monospace;font-size:.65rem;color:var(--cyan);min-width:34px;text-align:center;}
+
+/* ── MAIN LAYOUT ── */
+.app{display:grid;grid-template-columns:220px 1fr 260px;flex:1;overflow:hidden;}
+
+/* ── LEFT PANEL — Elements ── */
+.left-panel{background:var(--s1);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;}
+.panel-title{padding:10px 14px;font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:6px;flex-shrink:0;}
+.panel-title .pdot{width:5px;height:5px;border-radius:50%;background:var(--cyan);}
+.elements-list{padding:10px;display:flex;flex-direction:column;gap:6px;overflow-y:auto;flex:1;}
+
+.el-item{
+  display:flex;align-items:center;gap:9px;padding:9px 12px;
+  border-radius:5px;border:1px solid var(--border);
+  background:var(--s2);cursor:grab;transition:.15s;
+  font-size:.72rem;font-weight:500;color:var(--text);
+}
+.el-item:hover{border-color:var(--cyan);color:var(--cyan);transform:translateX(2px);}
+.el-item:active{cursor:grabbing;}
+.el-icon{font-size:1rem;width:20px;text-align:center;flex-shrink:0;}
+.el-desc{font-size:.6rem;color:var(--muted);margin-top:2px;}
+
+.el-section-label{font-size:.58rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);padding:8px 4px 4px;border-top:1px solid var(--border);margin-top:4px;}
+
+/* ── CANVAS AREA ── */
+.canvas-area{overflow:auto;background:#1a1a26;display:flex;align-items:flex-start;justify-content:center;padding:36px;position:relative;}
+.canvas-inner{position:relative;}
+
+#canvas{
+  position:relative;overflow:hidden;
+  transform-origin:top center;
+  box-shadow:0 20px 60px rgba(0,0,0,.7);
+  transition:transform .2s;
+}
+
+/* section elements on canvas */
+.cv-el{
+  position:absolute;box-sizing:border-box;
+  cursor:move;
+}
+.cv-el.selected{
+  outline:2px solid var(--cyan);
+  outline-offset:1px;
+  z-index:1000!important;
+}
+.cv-el.selected::after{
+  content:attr(data-type);
+  position:absolute;top:-18px;left:0;
+  font-size:9px;background:var(--cyan);color:#0a0a12;
+  padding:1px 5px;border-radius:2px;font-family:'JetBrains Mono',monospace;
+  white-space:nowrap;pointer-events:none;
+}
+
+/* resize handle */
+.resize-handle{
+  position:absolute;bottom:-4px;right:-4px;
+  width:10px;height:10px;background:var(--cyan);border-radius:2px;
+  cursor:se-resize;z-index:10;
+}
+
+/* shape drawing overlay */
+#draw-overlay{
+  position:absolute;inset:0;z-index:900;
+  cursor:crosshair;display:none;
+}
+.draw-ghost{
+  position:absolute;border:2px dashed var(--cyan);
+  background:rgba(0,245,212,.08);pointer-events:none;
+}
+
+/* ── RIGHT PANEL — Properties ── */
+.right-panel{background:var(--s1);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;}
+.props-body{flex:1;overflow-y:auto;padding:12px;}
+
+.prop-group{margin-bottom:16px;}
+.prop-group-title{font-size:.58rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;padding-bottom:5px;border-bottom:1px solid var(--border);}
+.prop-row{display:flex;align-items:center;gap:8px;margin-bottom:7px;}
+.prop-label{font-size:.65rem;color:var(--muted);min-width:70px;flex-shrink:0;}
+.prop-input{
+  flex:1;background:var(--s3);border:1px solid var(--border);border-radius:3px;
+  padding:5px 8px;font-size:.7rem;color:var(--text);font-family:'Inter',sans-serif;
+  outline:none;transition:.15s;
+}
+.prop-input:focus{border-color:var(--cyan);}
+.prop-input[type=color]{padding:2px 4px;height:28px;cursor:pointer;}
+.prop-input[type=range]{padding:0;cursor:pointer;}
+.prop-input[type=number]{width:70px;}
+.prop-select{
+  flex:1;background:var(--s3);border:1px solid var(--border);border-radius:3px;
+  padding:5px 8px;font-size:.7rem;color:var(--text);font-family:'Inter',sans-serif;
+  outline:none;cursor:pointer;
+}
+.prop-select:focus{border-color:var(--cyan);}
+.prop-textarea{
+  width:100%;background:var(--s3);border:1px solid var(--border);border-radius:3px;
+  padding:6px 8px;font-size:.7rem;color:var(--text);font-family:'Inter',sans-serif;
+  outline:none;resize:vertical;min-height:60px;line-height:1.6;
+}
+.prop-textarea:focus{border-color:var(--cyan);}
+.prop-btn{
+  width:100%;padding:7px;border-radius:3px;border:1px solid var(--border);
+  background:var(--s3);color:var(--muted);font-size:.65rem;font-weight:600;
+  letter-spacing:.06em;text-transform:uppercase;cursor:pointer;transition:.15s;
+  font-family:'Inter',sans-serif;margin-top:4px;
+}
+.prop-btn:hover{border-color:var(--cyan);color:var(--cyan);}
+.prop-btn.del{border-color:var(--red);color:var(--red);}
+.prop-btn.del:hover{background:var(--red);color:#fff;}
+
+.xy-row{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+.xy-input{background:var(--s3);border:1px solid var(--border);border-radius:3px;padding:5px 7px;font-size:.7rem;color:var(--text);font-family:'JetBrains Mono',monospace;outline:none;width:100%;}
+.xy-input:focus{border-color:var(--cyan);}
+
+.no-sel{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:40px 20px;text-align:center;color:var(--muted);height:100%;}
+.no-sel-icon{font-size:2rem;opacity:.2;}
+.no-sel-txt{font-size:.75rem;line-height:1.7;}
+
+/* ── JSON output panel ── */
+.json-out-panel{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px);}
+.json-out-panel.open{display:flex;}
+.json-modal{background:var(--s2);border:1px solid var(--border2);border-radius:8px;width:min(860px,95vw);max-height:90vh;display:flex;flex-direction:column;}
+.json-modal-head{padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.json-modal-title{font-family:'Syne',sans-serif;font-weight:700;font-size:.9rem;color:var(--cyan);}
+.json-modal-actions{display:flex;gap:8px;}
+.json-textarea{flex:1;resize:none;padding:18px;background:transparent;border:none;outline:none;color:#7ecfb5;font-family:'JetBrains Mono',monospace;font-size:.72rem;line-height:1.75;overflow-y:auto;}
+.json-modal-foot{padding:12px 20px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-shrink:0;}
+.json-byte-count{font-size:.62rem;color:var(--muted);font-family:'JetBrains Mono',monospace;}
+.copied-toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--cyan);color:#0a0a12;padding:8px 20px;border-radius:4px;font-size:.75rem;font-weight:600;opacity:0;transition:opacity .3s;pointer-events:none;}
+.copied-toast.show{opacity:1;}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="logo">cv<span>.</span>builder</div>
+  <div class="tb-sep"></div>
+
+  <div class="tool-group">
+    <button class="tbtn active" id="tool-select" onclick="setTool('select')"><span class="ico">↖</span> Select</button>
+    <button class="tbtn" id="tool-draw" onclick="setTool('draw')"><span class="ico">▭</span> Draw Shape</button>
+  </div>
+
+  <div class="tb-sep"></div>
+
+  <div class="tool-group">
+    <button class="tbtn" onclick="moveZ('up')"><span class="ico">⬆</span> Forward</button>
+    <button class="tbtn" onclick="moveZ('down')"><span class="ico">⬇</span> Backward</button>
+    <button class="tbtn" onclick="duplicateSel()"><span class="ico">⧉</span> Duplicate</button>
+    <button class="tbtn danger" onclick="deleteSel()"><span class="ico">✕</span> Delete</button>
+  </div>
+
+  <div class="tr">
+    <div class="zw">
+      <span class="zl">Zoom</span>
+      <button class="zb" onclick="dz(-.1)">−</button>
+      <span class="zv" id="zv">100%</span>
+      <button class="zb" onclick="dz(+.1)">+</button>
+      <button class="zb" style="width:auto;padding:0 6px;font-size:.55rem;letter-spacing:.06em;" onclick="fitZ()">FIT</button>
+    </div>
+    <div class="tb-sep"></div>
+    <button class="tbtn" onclick="clearCanvas()"><span class="ico">🗑</span> Clear</button>
+    <button class="tbtn export" onclick="exportJSON()"><span class="ico">{ }</span> Export JSON</button>
+  </div>
+</div>
+
+<!-- APP BODY -->
+<div class="app">
+
+  <!-- LEFT: Elements palette -->
+  <div class="left-panel">
+    <div class="panel-title"><span class="pdot"></span>Elements</div>
+    <div class="elements-list">
+
+      <div class="el-section-label" style="margin-top:0;border-top:none;">Shapes & Layout</div>
+
+      <div class="el-item" draggable="true" data-type="shape" data-subtype="rect">
+        <span class="el-icon">▬</span>
+        <div><div>Rectangle</div><div class="el-desc">Background, sidebar, card</div></div>
+      </div>
+      <div class="el-item" draggable="true" data-type="shape" data-subtype="circle">
+        <span class="el-icon">●</span>
+        <div><div>Circle / Oval</div><div class="el-desc">Profile bg, decorative</div></div>
+      </div>
+      <div class="el-item" draggable="true" data-type="divider">
+        <span class="el-icon">─</span>
+        <div><div>Divider Line</div><div class="el-desc">Section separator</div></div>
+      </div>
+
+      <div class="el-section-label">Content Blocks</div>
+
+      <div class="el-item" draggable="true" data-type="image">
+        <span class="el-icon">🖼</span>
+        <div><div>Image</div><div class="el-desc">Profile photo</div></div>
+      </div>
+      <div class="el-item" draggable="true" data-type="textBlock">
+        <span class="el-icon">T</span>
+        <div><div>Text Block</div><div class="el-desc">Title + subtitle + body</div></div>
+      </div>
+      <div class="el-item" draggable="true" data-type="text">
+        <span class="el-icon">𝐓</span>
+        <div><div>Simple Text</div><div class="el-desc">Single text element</div></div>
+      </div>
+
+      <div class="el-section-label">CV Sections</div>
+
+      <div class="el-item" draggable="true" data-type="listBlock">
+        <span class="el-icon">☰</span>
+        <div><div>List Block</div><div class="el-desc">Contact info, links</div></div>
+      </div>
+      <div class="el-item" draggable="true" data-type="experienceBlock">
+        <span class="el-icon">💼</span>
+        <div><div>Experience</div><div class="el-desc">Work history</div></div>
+      </div>
+      <div class="el-item" draggable="true" data-type="educationBlock">
+        <span class="el-icon">🎓</span>
+        <div><div>Education</div><div class="el-desc">Degrees & schools</div></div>
+      </div>
+      <div class="el-item" draggable="true" data-type="skillsBlock">
+        <span class="el-icon">📊</span>
+        <div><div>Skills</div><div class="el-desc">Bar, dot or tag display</div></div>
+      </div>
+      <div class="el-item" draggable="true" data-type="projectsBlock">
+        <span class="el-icon">🚀</span>
+        <div><div>Projects</div><div class="el-desc">Portfolio items</div></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- CENTER: Canvas -->
+  <div class="canvas-area" id="canvas-area">
+    <div class="canvas-inner" id="canvas-inner">
+      <div id="canvas"></div>
+      <div id="draw-overlay"></div>
+    </div>
+  </div>
+
+  <!-- RIGHT: Properties -->
+  <div class="right-panel">
+    <div class="panel-title"><span class="pdot"></span>Properties</div>
+    <div class="props-body" id="props-body">
+      <div class="no-sel">
+        <div class="no-sel-icon">↖</div>
+        <div class="no-sel-txt">Click an element to edit its properties, or drag one from the left panel onto the canvas.</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- JSON Export Modal -->
+<div class="json-out-panel" id="json-panel">
+  <div class="json-modal">
+    <div class="json-modal-head">
+      <div class="json-modal-title">{ } Exported JSON</div>
+      <div class="json-modal-actions">
+        <button class="tbtn" onclick="copyJSON()">📋 Copy</button>
+        <button class="tbtn" onclick="downloadJSON()">⬇ Download</button>
+        <button class="tbtn danger" onclick="closeJSON()">✕ Close</button>
+      </div>
+    </div>
+    <textarea class="json-textarea" id="json-out" readonly></textarea>
+    <div class="json-modal-foot">
+      <span class="json-byte-count" id="json-bytes"></span>
+      <span style="font-size:.62rem;color:var(--muted);">Paste this into cv-viewer.html to preview</span>
+    </div>
+  </div>
+</div>
+
+<div class="copied-toast" id="toast">Copied to clipboard!</div>
+
+<script>
+// ══════════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════════
+let sections   = [];
+let selected   = null;
+let scale      = 1;
+let tool       = 'select';
+let zCounter   = 10;
+let idCounter  = 1;
+let canvasW    = 595;
+let canvasH    = 842;
+let canvasBg   = '#FFFFFF';
+
+// draw state
+let drawing    = false;
+let drawStart  = null;
+let drawGhost  = null;
+
+// drag state
+let dragging   = false;
+let dragOff    = {x:0,y:0};
+let dragEl     = null;
+
+// resize state
+let resizing   = false;
+let resizeEl   = null;
+let resizeStart= null;
+
+// ── Init canvas ───────────────────────────────────────────
+const CV = document.getElementById('canvas');
+CV.style.width  = canvasW + 'px';
+CV.style.height = canvasH + 'px';
+CV.style.background = canvasBg;
+CV.style.position   = 'relative';
+CV.style.overflow   = 'hidden';
+
+setTimeout(fitZ, 100);
+
+// ══════════════════════════════════════════════════════════
+// ZOOM
+// ══════════════════════════════════════════════════════════
+function dz(d){scale=Math.max(.2,Math.min(2.5,scale+d));applyZ();}
+function fitZ(){
+  const a=document.getElementById('canvas-area');
+  scale=Math.min(1,(a.clientWidth-80)/canvasW,(a.clientHeight-80)/canvasH);
+  applyZ();
+}
+function applyZ(){
+  document.getElementById('zv').textContent=Math.round(scale*100)+'%';
+  CV.style.transform=`scale(${scale})`;
+  document.getElementById('canvas-inner').style.width  = canvasW*scale+'px';
+  document.getElementById('canvas-inner').style.height = canvasH*scale+'px';
+}
+
+// ══════════════════════════════════════════════════════════
+// TOOL
+// ══════════════════════════════════════════════════════════
+function setTool(t){
+  tool=t;
+  document.getElementById('tool-select').classList.toggle('active',t==='select');
+  document.getElementById('tool-draw').classList.toggle('active',t==='draw');
+  const ov=document.getElementById('draw-overlay');
+  ov.style.display = t==='draw' ? 'block' : 'none';
+  CV.style.cursor  = t==='draw' ? 'crosshair' : 'default';
+}
+
+// ══════════════════════════════════════════════════════════
+// DRAG FROM PALETTE → CANVAS
+// ══════════════════════════════════════════════════════════
+document.querySelectorAll('.el-item[draggable]').forEach(el=>{
+  el.addEventListener('dragstart',e=>{
+    e.dataTransfer.setData('type', el.dataset.type);
+    e.dataTransfer.setData('subtype', el.dataset.subtype||'');
+  });
+});
+
+const canvasArea = document.getElementById('canvas-area');
+canvasArea.addEventListener('dragover', e=>e.preventDefault());
+canvasArea.addEventListener('drop', e=>{
+  e.preventDefault();
+  const type    = e.dataTransfer.getData('type');
+  const subtype = e.dataTransfer.getData('subtype');
+  if(!type) return;
+
+  // get position relative to canvas
+  const rect = CV.getBoundingClientRect();
+  const x = Math.round((e.clientX - rect.left) / scale);
+  const y = Math.round((e.clientY - rect.top)  / scale);
+
+  const sec = makeSection(type, subtype, Math.max(0,x-60), Math.max(0,y-20));
+  addSection(sec);
+  selectSection(sec.id);
+});
+
+// ══════════════════════════════════════════════════════════
+// DRAW SHAPE ON CANVAS
+// ══════════════════════════════════════════════════════════
+const drawOverlay = document.getElementById('draw-overlay');
+
+drawOverlay.addEventListener('mousedown', e=>{
+  if(tool!=='draw') return;
+  drawing = true;
+  const rect = CV.getBoundingClientRect();
+  drawStart = {
+    x: Math.round((e.clientX-rect.left)/scale),
+    y: Math.round((e.clientY-rect.top) /scale),
+  };
+  drawGhost = document.createElement('div');
+  drawGhost.className = 'draw-ghost';
+  drawGhost.style.left   = drawStart.x+'px';
+  drawGhost.style.top    = drawStart.y+'px';
+  drawGhost.style.width  = '0px';
+  drawGhost.style.height = '0px';
+  drawOverlay.appendChild(drawGhost);
+});
+
+document.addEventListener('mousemove', e=>{
+  if(!drawing || !drawGhost) return;
+  const rect = CV.getBoundingClientRect();
+  const cx = Math.round((e.clientX-rect.left)/scale);
+  const cy = Math.round((e.clientY-rect.top) /scale);
+  const x = Math.min(drawStart.x, cx);
+  const y = Math.min(drawStart.y, cy);
+  const w = Math.abs(cx - drawStart.x);
+  const h = Math.abs(cy - drawStart.y);
+  drawGhost.style.left   = x+'px';
+  drawGhost.style.top    = y+'px';
+  drawGhost.style.width  = w+'px';
+  drawGhost.style.height = h+'px';
+});
+
+document.addEventListener('mouseup', e=>{
+  if(!drawing) return;
+  drawing = false;
+  if(!drawGhost) return;
+  const x = parseInt(drawGhost.style.left);
+  const y = parseInt(drawGhost.style.top);
+  const w = parseInt(drawGhost.style.width);
+  const h = parseInt(drawGhost.style.height);
+  drawGhost.remove();
+  drawGhost = null;
+  if(w>10 && h>10){
+    const sec = makeSection('shape','rect',x,y,w,h);
+    addSection(sec);
+    selectSection(sec.id);
+  }
+  setTool('select');
+});
+
+// ══════════════════════════════════════════════════════════
+// SECTION FACTORY — default data for each type
+// ══════════════════════════════════════════════════════════
+function makeSection(type, subtype, x, y, w, h){
+  const id = type+'_'+Date.now()+'_'+(idCounter++);
+  const defaults = {
+    shape:          {w:w||200, h:h||100},
+    divider:        {w:w||300, h:h||2},
+    image:          {w:w||100, h:h||100},
+    textBlock:      {w:w||200, h:h||100},
+    text:           {w:w||160, h:h||30},
+    listBlock:      {w:w||180, h:h||140},
+    experienceBlock:{w:w||300, h:h||200},
+    educationBlock: {w:w||280, h:h||120},
+    skillsBlock:    {w:w||180, h:h||160},
+    projectsBlock:  {w:w||280, h:h||140},
+  };
+  const d = defaults[type] || {w:160,h:80};
+  const sec = {
+    id,
+    type,
+    transform:{ x:Math.max(0,x), y:Math.max(0,y), width:d.w, height:d.h, rotation:0, zIndex:zCounter++, lockedAspectRatio:false },
+    meta:{ isLocked:false, isHidden:false, isEditable:true, isDraggable:true, isResizable:true, isRotatable:false },
+    content: defaultContent(type, subtype),
+    style:   defaultStyle(type, subtype),
+  };
+  if(type==='shape') sec.style._subtype = subtype||'rect';
+  return sec;
+}
+
+function defaultContent(type, subtype){
+  if(type==='shape')           return {};
+  if(type==='divider')         return {};
+  if(type==='image')           return {src:'', alt:'Profile'};
+  if(type==='text')            return {text:'Your text here'};
+  if(type==='textBlock')       return {title:'Your Name', subtitle:'Job Title', body:'Short summary about yourself.'};
+  if(type==='listBlock')       return {title:'CONTACT', items:[
+    {id:'i1',icon:'phone',text:'+123 456 7890',link:''},
+    {id:'i2',icon:'email',text:'you@email.com',link:''},
+  ]};
+  if(type==='experienceBlock') return {title:'EXPERIENCE', items:[
+    {id:'e1',role:'Job Title',company:'Company Name',duration:{start:'2022',end:'Present'},details:['Key responsibility one.','Key responsibility two.']}
+  ]};
+  if(type==='educationBlock')  return {title:'EDUCATION', items:[
+    {id:'ed1',degree:'Degree Name',school:'University Name',year:'2018 – 2022'}
+  ]};
+  if(type==='skillsBlock')     return {title:'SKILLS', items:[
+    {name:'Skill One',level:90},{name:'Skill Two',level:75},{name:'Skill Three',level:85}
+  ]};
+  if(type==='projectsBlock')   return {title:'PROJECTS', items:[
+    {name:'Project Name',description:'Brief project description.',tags:['Flutter','Firebase']}
+  ]};
+  return {};
+}
+
+function defaultStyle(type, subtype){
+  if(type==='shape') return {backgroundColor: subtype==='circle'?'#1B2D4F':'#E2E8F0', borderRadius: subtype==='circle'?999:0, borderWidth:0, borderColor:'#000000', opacity:1};
+  if(type==='divider') return {color:'#cccccc', thickness:1};
+  if(type==='image') return {borderRadius:8,borderWidth:2,borderColor:'#cccccc',backgroundColor:'#eeeeee',opacity:1};
+  if(type==='text') return {fontFamily:'Inter',fontSize:14,fontWeight:400,color:'#222222',lineHeight:1.4,textAlign:'left'};
+  if(type==='textBlock') return {
+    alignment:'left',
+    title:   {fontFamily:'Inter',fontSize:22,fontWeight:700,color:'#111111'},
+    subtitle:{fontFamily:'Inter',fontSize:13,fontWeight:500,color:'#555555'},
+    body:    {fontFamily:'Inter',fontSize:11,fontWeight:400,color:'#666666',lineHeight:1.6},
+  };
+  if(type==='listBlock') return {
+    title:   {fontFamily:'Inter',fontSize:13,fontWeight:700,color:'#111111'},
+    itemText:{fontFamily:'Inter',fontSize:11,fontWeight:400,color:'#444444'},
+    icon:    {size:12,color:'#E94560'},spacing:8,
+  };
+  if(type==='experienceBlock') return {
+    title:   {fontFamily:'Inter',fontSize:13,fontWeight:700,color:'#111111'},
+    role:    {fontFamily:'Inter',fontSize:12,fontWeight:600,color:'#111111'},
+    company: {fontFamily:'Inter',fontSize:11,fontWeight:400,color:'#555555'},
+    duration:{fontFamily:'Inter',fontSize:10,fontWeight:400,color:'#888888'},
+    details: {fontFamily:'Inter',fontSize:10,fontWeight:400,color:'#444444',lineHeight:1.5},
+    accentColor:'#E94560',spacing:12,
+  };
+  if(type==='educationBlock') return {
+    title: {fontFamily:'Inter',fontSize:13,fontWeight:700,color:'#111111'},
+    degree:{fontFamily:'Inter',fontSize:12,fontWeight:600,color:'#111111'},
+    school:{fontFamily:'Inter',fontSize:11,fontWeight:400,color:'#555555'},
+    year:  {fontFamily:'Inter',fontSize:10,fontWeight:400,color:'#888888'},
+    spacing:12,
+  };
+  if(type==='skillsBlock') return {
+    title:    {fontFamily:'Inter',fontSize:13,fontWeight:700,color:'#111111'},
+    itemText: {fontFamily:'Inter',fontSize:11,fontWeight:400,color:'#333333'},
+    barColor:'#E94560',trackColor:'#eeeeee',barHeight:4,spacing:10,displayType:'bar',
+  };
+  if(type==='projectsBlock') return {
+    title:      {fontFamily:'Inter',fontSize:13,fontWeight:700,color:'#111111'},
+    name:       {fontFamily:'Inter',fontSize:12,fontWeight:600,color:'#111111'},
+    description:{fontFamily:'Inter',fontSize:10,fontWeight:400,color:'#555555',lineHeight:1.5},
+    accentColor:'#E94560',spacing:12,
+  };
+  return {};
+}
+
+// ══════════════════════════════════════════════════════════
+// ADD / RENDER SECTION
+// ══════════════════════════════════════════════════════════
+function addSection(sec){
+  sections.push(sec);
+  renderEl(sec);
+}
+
+function renderEl(sec){
+  // remove old DOM if exists
+  const old = document.getElementById('el_'+sec.id);
+  if(old) old.remove();
+
+  const tf = sec.transform;
+  const st = sec.style;
+  const co = sec.content;
+
+  const el = document.createElement('div');
+  el.id = 'el_'+sec.id;
+  el.className = 'cv-el';
+  el.dataset.id   = sec.id;
+  el.dataset.type = sec.type;
+
+  el.style.left      = tf.x+'px';
+  el.style.top       = tf.y+'px';
+  el.style.width     = tf.width+'px';
+  el.style.minHeight = tf.height+'px';
+  el.style.zIndex    = tf.zIndex;
+  if(tf.rotation) el.style.transform = `rotate(${tf.rotation}deg)`;
+
+  // visual rendering per type
+  applyVisual(el, sec);
+
+  // resize handle
+  const rh = document.createElement('div');
+  rh.className = 'resize-handle';
+  rh.dataset.id = sec.id;
+  el.appendChild(rh);
+
+  // events
+  el.addEventListener('mousedown', onElMouseDown);
+  rh.addEventListener('mousedown', onResizeMouseDown);
+
+  CV.appendChild(el);
+}
+
+function applyVisual(el, sec){
+  const tf = sec.transform;
+  const st = sec.style;
+  const co = sec.content;
+  const type = sec.type;
+
+  // clear content (not resize handle)
+  Array.from(el.children).forEach(c=>{ if(!c.classList.contains('resize-handle')) c.remove(); });
+
+  if(type==='shape'){
+    el.style.background   = st.backgroundColor||'#E2E8F0';
+    el.style.borderRadius = (st.borderRadius||0)+'px';
+    el.style.border       = st.borderWidth ? `${st.borderWidth}px solid ${st.borderColor||'#000'}` : 'none';
+    el.style.opacity      = st.opacity!==undefined ? st.opacity : 1;
+  }
+  else if(type==='divider'){
+    el.style.background = st.color||'#ccc';
+    el.style.height     = (st.thickness||1)+'px';
+    el.style.minHeight  = (st.thickness||1)+'px';
+  }
+  else if(type==='image'){
+    el.style.borderRadius = (st.borderRadius||0)+'px';
+    el.style.border  = st.borderWidth ? `${st.borderWidth}px solid ${st.borderColor||'transparent'}` : 'none';
+    el.style.overflow= 'hidden';
+    el.style.background = st.backgroundColor||'#eee';
+    el.style.display='flex';el.style.alignItems='center';el.style.justifyContent='center';
+    if(co.src){
+      const img = document.createElement('img');
+      img.src=co.src; img.style.cssText='width:100%;height:100%;object-fit:cover;';
+      img.onerror=()=>{img.replaceWith(makePH())};
+      el.appendChild(img);
+    } else {
+      el.appendChild(makePH());
+    }
+  }
+  else if(type==='textBlock'){
+    el.style.overflow='hidden';
+    const ts=st.title||{}, ss=st.subtitle||{}, bs=st.body||{};
+    const d=document.createElement('div');
+    d.style.textAlign=st.alignment||'left';
+    if(co.title){
+      const t=document.createElement('div');
+      t.textContent=co.title;
+      Object.assign(t.style,{fontFamily:ts.fontFamily||'Inter',fontSize:(ts.fontSize||22)+'px',fontWeight:ts.fontWeight||700,color:ts.color||'#111',lineHeight:ts.lineHeight||1.2});
+      d.appendChild(t);
+    }
+    if(co.subtitle){
+      const t=document.createElement('div');
+      t.textContent=co.subtitle;
+      t.style.marginTop='3px';
+      Object.assign(t.style,{fontFamily:ss.fontFamily||'Inter',fontSize:(ss.fontSize||13)+'px',fontWeight:ss.fontWeight||500,color:ss.color||'#555'});
+      d.appendChild(t);
+    }
+    if(co.body){
+      const t=document.createElement('div');
+      t.textContent=co.body;
+      t.style.marginTop='6px';
+      Object.assign(t.style,{fontFamily:bs.fontFamily||'Inter',fontSize:(bs.fontSize||11)+'px',fontWeight:bs.fontWeight||400,color:bs.color||'#666',lineHeight:bs.lineHeight||1.6});
+      d.appendChild(t);
+    }
+    el.appendChild(d);
+  }
+  else if(type==='text'){
+    const t=document.createElement('div');
+    t.textContent=co.text||'';
+    Object.assign(t.style,{fontFamily:st.fontFamily||'Inter',fontSize:(st.fontSize||14)+'px',fontWeight:st.fontWeight||400,color:st.color||'#222',lineHeight:st.lineHeight||1.4,textAlign:st.textAlign||'left'});
+    el.appendChild(t);
+  }
+  else {
+    // All CV block types — show a labelled placeholder
+    const colors = {listBlock:'#3b82f6',experienceBlock:'#8b5cf6',educationBlock:'#10b981',skillsBlock:'#f59e0b',projectsBlock:'#ef4444'};
+    const color  = colors[type]||'#6366f1';
+    const icons  = {listBlock:'☰',experienceBlock:'💼',educationBlock:'🎓',skillsBlock:'📊',projectsBlock:'🚀'};
+    const labels = {listBlock:'List / Contact',experienceBlock:'Experience',educationBlock:'Education',skillsBlock:'Skills',projectsBlock:'Projects'};
+    el.style.cssText += `border:1.5px dashed ${color}44;background:${color}08;border-radius:4px;overflow:hidden;`;
+    const ph=document.createElement('div');
+    ph.style.cssText=`padding:10px 12px;`;
+    // title
+    const tl=document.createElement('div');
+    tl.style.cssText=`display:flex;align-items:center;gap:6px;font-size:10px;font-weight:700;color:${color};letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px;`;
+    tl.innerHTML=`<span>${icons[type]||'□'}</span><span>${labels[type]||type}</span>`;
+    ph.appendChild(tl);
+    // content preview
+    if(co.title){const p=document.createElement('div');p.textContent=co.title;p.style.cssText=`font-size:10px;font-weight:700;color:#888;margin-bottom:4px;`;ph.appendChild(p);}
+    const items=co.items||[];
+    items.slice(0,3).forEach(item=>{
+      const p=document.createElement('div');
+      const txt=item.text||item.name||item.role||item.degree||'';
+      p.textContent='· '+txt;
+      p.style.cssText='font-size:9px;color:#666;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
+      ph.appendChild(p);
+    });
+    if(items.length>3){const m=document.createElement('div');m.textContent=`+${items.length-3} more`;m.style.cssText='font-size:9px;color:#555;margin-top:2px;';ph.appendChild(m);}
+    el.appendChild(ph);
+  }
+}
+
+function makePH(){const s=document.createElement('span');s.textContent='👤';s.style.cssText='font-size:1.8rem;opacity:.3;';return s;}
+
+// ══════════════════════════════════════════════════════════
+// DRAG TO MOVE
+// ══════════════════════════════════════════════════════════
+function onElMouseDown(e){
+  if(e.target.classList.contains('resize-handle')) return;
+  if(tool!=='select') return;
+  e.stopPropagation();
+
+  const id = e.currentTarget.dataset.id;
+  selectSection(id);
+
+  dragging = true;
+  dragEl   = e.currentTarget;
+  const sec = getSec(id);
+  dragOff = {
+    x: e.clientX/scale - sec.transform.x,
+    y: e.clientY/scale - sec.transform.y,
+  };
+}
+
+document.addEventListener('mousemove', e=>{
+  if(!dragging || !dragEl) return;
+  const id  = dragEl.dataset.id;
+  const sec = getSec(id);
+  const nx  = Math.round(e.clientX/scale - dragOff.x);
+  const ny  = Math.round(e.clientY/scale - dragOff.y);
+  sec.transform.x = Math.max(0, nx);
+  sec.transform.y = Math.max(0, ny);
+  dragEl.style.left = sec.transform.x+'px';
+  dragEl.style.top  = sec.transform.y+'px';
+  updatePropXY(sec);
+});
+
+document.addEventListener('mouseup', ()=>{
+  dragging = false; dragEl = null;
+  resizing = false; resizeEl = null;
+});
+
+// ══════════════════════════════════════════════════════════
+// RESIZE
+// ══════════════════════════════════════════════════════════
+function onResizeMouseDown(e){
+  e.stopPropagation();
+  const id = e.target.dataset.id;
+  selectSection(id);
+  resizing   = true;
+  resizeEl   = document.getElementById('el_'+id);
+  resizeStart= {
+    mx:e.clientX, my:e.clientY,
+    w:getSec(id).transform.width,
+    h:getSec(id).transform.height,
+  };
+}
+
+document.addEventListener('mousemove', e=>{
+  if(!resizing || !resizeEl) return;
+  const id  = resizeEl.dataset.id;
+  const sec = getSec(id);
+  const dw  = (e.clientX - resizeStart.mx)/scale;
+  const dh  = (e.clientY - resizeStart.my)/scale;
+  sec.transform.width  = Math.max(40, Math.round(resizeStart.w+dw));
+  sec.transform.height = Math.max(20, Math.round(resizeStart.h+dh));
+  resizeEl.style.width     = sec.transform.width+'px';
+  resizeEl.style.minHeight = sec.transform.height+'px';
+  updatePropXY(sec);
+});
+
+// ══════════════════════════════════════════════════════════
+// DESELECT ON CANVAS CLICK
+// ══════════════════════════════════════════════════════════
+CV.addEventListener('mousedown', e=>{
+  if(e.target===CV) selectSection(null);
+});
+
+// ══════════════════════════════════════════════════════════
+// SELECT
+// ══════════════════════════════════════════════════════════
+function selectSection(id){
+  // deselect previous
+  document.querySelectorAll('.cv-el.selected').forEach(e=>e.classList.remove('selected'));
+  selected = id;
+  if(id){
+    const el = document.getElementById('el_'+id);
+    if(el) el.classList.add('selected');
+    renderProps(getSec(id));
+  } else {
+    renderNoSel();
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+// KEYBOARD SHORTCUTS
+// ══════════════════════════════════════════════════════════
+document.addEventListener('keydown', e=>{
+  if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'||e.target.tagName==='SELECT') return;
+  if((e.key==='Delete'||e.key==='Backspace') && selected) deleteSel();
+  if(e.key==='Escape') selectSection(null);
+  if(e.key==='ArrowUp'    && selected){ moveSelected(0,-1,e); }
+  if(e.key==='ArrowDown'  && selected){ moveSelected(0, 1,e); }
+  if(e.key==='ArrowLeft'  && selected){ moveSelected(-1,0,e); }
+  if(e.key==='ArrowRight' && selected){ moveSelected( 1,0,e); }
+  if((e.ctrlKey||e.metaKey) && e.key==='d'){ e.preventDefault(); duplicateSel(); }
+});
+
+function moveSelected(dx,dy,e){
+  const step = e && e.shiftKey ? 10 : 1;
+  const sec  = getSec(selected);
+  if(!sec) return;
+  sec.transform.x = Math.max(0, sec.transform.x + dx*step);
+  sec.transform.y = Math.max(0, sec.transform.y + dy*step);
+  const el = document.getElementById('el_'+selected);
+  if(el){ el.style.left=sec.transform.x+'px'; el.style.top=sec.transform.y+'px'; }
+  updatePropXY(sec);
+  e && e.preventDefault();
+}
+
+// ══════════════════════════════════════════════════════════
+// OPERATIONS
+// ══════════════════════════════════════════════════════════
+function deleteSel(){
+  if(!selected) return;
+  sections = sections.filter(s=>s.id!==selected);
+  const el = document.getElementById('el_'+selected);
+  if(el) el.remove();
+  selectSection(null);
+}
+
+function duplicateSel(){
+  if(!selected) return;
+  const orig = getSec(selected);
+  const copy = JSON.parse(JSON.stringify(orig));
+  copy.id = orig.type+'_'+Date.now()+'_'+(idCounter++);
+  copy.transform.x += 20;
+  copy.transform.y += 20;
+  copy.transform.zIndex = zCounter++;
+  addSection(copy);
+  selectSection(copy.id);
+}
+
+function moveZ(dir){
+  if(!selected) return;
+  const sec = getSec(selected);
+  if(dir==='up')   sec.transform.zIndex += 2;
+  else             sec.transform.zIndex  = Math.max(0, sec.transform.zIndex-2);
+  const el = document.getElementById('el_'+selected);
+  if(el) el.style.zIndex = sec.transform.zIndex;
+}
+
+function clearCanvas(){
+  if(!confirm('Clear all elements?')) return;
+  sections=[];
+  document.querySelectorAll('.cv-el').forEach(e=>e.remove());
+  selectSection(null);
+}
+
+// ══════════════════════════════════════════════════════════
+// PROPERTIES PANEL
+// ══════════════════════════════════════════════════════════
+function renderNoSel(){
+  document.getElementById('props-body').innerHTML=`
+    <div class="no-sel">
+      <div class="no-sel-icon">↖</div>
+      <div class="no-sel-txt">Click an element to edit its properties.</div>
+    </div>`;
+}
+
+function renderProps(sec){
+  if(!sec){renderNoSel();return;}
+  const tf=sec.transform, st=sec.style, co=sec.content;
+  let html=``;
+
+  // ── Transform ──
+  html+=`<div class="prop-group">
+    <div class="prop-group-title">Transform</div>
+    <div class="prop-row"><span class="prop-label">X / Y</span>
+      <div class="xy-row" style="flex:1">
+        <input class="xy-input" type="number" value="${tf.x}" onchange="propChange(this,'transform.x')"/>
+        <input class="xy-input" type="number" value="${tf.y}" onchange="propChange(this,'transform.y')"/>
+      </div>
+    </div>
+    <div class="prop-row"><span class="prop-label">W / H</span>
+      <div class="xy-row" style="flex:1">
+        <input class="xy-input" type="number" value="${tf.width}"  onchange="propChange(this,'transform.width')"/>
+        <input class="xy-input" type="number" value="${tf.height}" onchange="propChange(this,'transform.height')"/>
+      </div>
+    </div>
+    <div class="prop-row"><span class="prop-label">Z-Index</span>
+      <input class="prop-input" type="number" value="${tf.zIndex}" onchange="propChange(this,'transform.zIndex')"/>
+    </div>
+    <div class="prop-row"><span class="prop-label">Rotation</span>
+      <input class="prop-input" type="number" value="${tf.rotation||0}" onchange="propChange(this,'transform.rotation')"/>
+    </div>
+  </div>`;
+
+  // ── Type-specific ──
+  const type=sec.type;
+
+  if(type==='shape'){
+    html+=`<div class="prop-group">
+      <div class="prop-group-title">Shape Style</div>
+      <div class="prop-row"><span class="prop-label">Fill Color</span>
+        <input class="prop-input" type="color" value="${st.backgroundColor||'#E2E8F0'}" onchange="propChange(this,'style.backgroundColor')"/>
+        <input class="prop-input" type="text"  value="${st.backgroundColor||'#E2E8F0'}" style="max-width:90px;" onchange="propChange(this,'style.backgroundColor')"/>
+      </div>
+      <div class="prop-row"><span class="prop-label">Radius</span>
+        <input class="prop-input" type="number" value="${st.borderRadius||0}" onchange="propChange(this,'style.borderRadius')"/>
+      </div>
+      <div class="prop-row"><span class="prop-label">Opacity</span>
+        <input class="prop-input" type="range" min="0" max="1" step=".05" value="${st.opacity||1}" oninput="propChange(this,'style.opacity')"/>
+      </div>
+      <div class="prop-row"><span class="prop-label">Border W</span>
+        <input class="prop-input" type="number" value="${st.borderWidth||0}" onchange="propChange(this,'style.borderWidth')"/>
+      </div>
+      <div class="prop-row"><span class="prop-label">Border C</span>
+        <input class="prop-input" type="color"  value="${st.borderColor||'#000000'}" onchange="propChange(this,'style.borderColor')"/>
+      </div>
+    </div>`;
+  }
+
+  if(type==='divider'){
+    html+=`<div class="prop-group">
+      <div class="prop-group-title">Divider Style</div>
+      <div class="prop-row"><span class="prop-label">Color</span>
+        <input class="prop-input" type="color" value="${st.color||'#cccccc'}" onchange="propChange(this,'style.color')"/>
+        <input class="prop-input" type="text" value="${st.color||'#cccccc'}" style="max-width:90px;" onchange="propChange(this,'style.color')"/>
+      </div>
+      <div class="prop-row"><span class="prop-label">Thickness</span>
+        <input class="prop-input" type="number" value="${st.thickness||1}" onchange="propChange(this,'style.thickness')"/>
+      </div>
+    </div>`;
+  }
+
+  if(type==='image'){
+    html+=`<div class="prop-group">
+      <div class="prop-group-title">Image</div>
+      <div class="prop-row"><span class="prop-label">URL / src</span>
+        <input class="prop-input" type="text" value="${co.src||''}" placeholder="https://..." onchange="propChange(this,'content.src')"/>
+      </div>
+      <div class="prop-row"><span class="prop-label">Alt text</span>
+        <input class="prop-input" type="text" value="${co.alt||''}" onchange="propChange(this,'content.alt')"/>
+      </div>
+      <div class="prop-row"><span class="prop-label">Radius</span>
+        <input class="prop-input" type="number" value="${st.borderRadius||0}" onchange="propChange(this,'style.borderRadius')"/>
+      </div>
+      <div class="prop-row"><span class="prop-label">Border W</span>
+        <input class="prop-input" type="number" value="${st.borderWidth||0}" onchange="propChange(this,'style.borderWidth')"/>
+      </div>
+      <div class="prop-row"><span class="prop-label">Border C</span>
+        <input class="prop-input" type="color" value="${st.borderColor||'#cccccc'}" onchange="propChange(this,'style.borderColor')"/>
+      </div>
+    </div>`;
+  }
+
+  if(type==='text'){
+    html+=`<div class="prop-group">
+      <div class="prop-group-title">Text</div>
+      <div class="prop-row"><span class="prop-label">Content</span>
+        <textarea class="prop-textarea" onchange="propChange(this,'content.text')">${co.text||''}</textarea>
+      </div>
+      <div class="prop-row"><span class="prop-label">Font</span>
+        <select class="prop-select" onchange="propChange(this,'style.fontFamily')">${fontOptions(st.fontFamily)}</select>
+      </div>
+      <div class="prop-row"><span class="prop-label">Size</span>
+        <input class="prop-input" type="number" value="${st.fontSize||14}" onchange="propChange(this,'style.fontSize')"/>
+      </div>
+      <div class="prop-row"><span class="prop-label">Weight</span>
+        <select class="prop-select" onchange="propChange(this,'style.fontWeight')">${weightOptions(st.fontWeight)}</select>
+      </div>
+      <div class="prop-row"><span class="prop-label">Color</span>
+        <input class="prop-input" type="color" value="${st.color||'#222222'}" onchange="propChange(this,'style.color')"/>
+        <input class="prop-input" type="text"  value="${st.color||'#222222'}" style="max-width:80px;" onchange="propChange(this,'style.color')"/>
+      </div>
+      <div class="prop-row"><span class="prop-label">Align</span>
+        <select class="prop-select" onchange="propChange(this,'style.textAlign')">
+          ${['left','center','right'].map(a=>`<option value="${a}"${st.textAlign===a?' selected':''}>${a}</option>`).join('')}
+        </select>
+      </div>
+    </div>`;
+  }
+
+  if(type==='textBlock'){
+    html+=`<div class="prop-group">
+      <div class="prop-group-title">Text Block Content</div>
+      <div class="prop-row"><span class="prop-label">Title</span>
+        <input class="prop-input" value="${esc(co.title||'')}" onchange="propChange(this,'content.title')"/>
+      </div>
+      <div class="prop-row"><span class="prop-label">Subtitle</span>
+        <input class="prop-input" value="${esc(co.subtitle||'')}" onchange="propChange(this,'content.subtitle')"/>
+      </div>
+      <div class="prop-row"><span class="prop-label">Body</span>
+        <textarea class="prop-textarea" onchange="propChange(this,'content.body')">${esc(co.body||'')}</textarea>
+      </div>
+      <div class="prop-row"><span class="prop-label">Align</span>
+        <select class="prop-select" onchange="propChange(this,'style.alignment')">
+          ${['left','center','right'].map(a=>`<option value="${a}"${st.alignment===a?' selected':''}>${a}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+    <div class="prop-group">
+      <div class="prop-group-title">Title Style</div>
+      ${textStyleInputs('style.title', st.title||{})}
+    </div>
+    <div class="prop-group">
+      <div class="prop-group-title">Subtitle Style</div>
+      ${textStyleInputs('style.subtitle', st.subtitle||{})}
+    </div>
+    <div class="prop-group">
+      <div class="prop-group-title">Body Style</div>
+      ${textStyleInputs('style.body', st.body||{})}
+    </div>`;
+  }
+
+  if(type==='listBlock'){
+    html+=`<div class="prop-group">
+      <div class="prop-group-title">List Block</div>
+      <div class="prop-row"><span class="prop-label">Title</span>
+        <input class="prop-input" value="${esc(co.title||'')}" onchange="propChange(this,'content.title')"/>
+      </div>
+      <div class="prop-row"><span class="prop-label">Items JSON</span></div>
+      <textarea class="prop-textarea" style="min-height:100px;" onchange="propChangeJSON(this,'content.items')">${JSON.stringify(co.items||[],null,2)}</textarea>
+    </div>
+    <div class="prop-group">
+      <div class="prop-group-title">Style</div>
+      <div class="prop-row"><span class="prop-label">Icon Color</span>
+        <input class="prop-input" type="color" value="${(st.icon&&st.icon.color)||'#E94560'}" onchange="propChangeNested(this,'style.icon.color')"/>
+      </div>
+      <div class="prop-row"><span class="prop-label">Spacing</span>
+        <input class="prop-input" type="number" value="${st.spacing||8}" onchange="propChange(this,'style.spacing')"/>
+      </div>
+    </div>`;
+  }
+
+  if(type==='experienceBlock'||type==='educationBlock'||type==='projectsBlock'){
+    const label = type==='experienceBlock'?'Experience':type==='educationBlock'?'Education':'Projects';
+    html+=`<div class="prop-group">
+      <div class="prop-group-title">${label}</div>
+      <div class="prop-row"><span class="prop-label">Title</span>
+        <input class="prop-input" value="${esc(co.title||'')}" onchange="propChange(this,'content.title')"/>
+      </div>
+      <div class="prop-row"><span class="prop-label">Items JSON</span></div>
+      <textarea class="prop-textarea" style="min-height:120px;" onchange="propChangeJSON(this,'content.items')">${JSON.stringify(co.items||[],null,2)}</textarea>
+    </div>
+    <div class="prop-group">
+      <div class="prop-group-title">Style</div>
+      <div class="prop-row"><span class="prop-label">Accent C</span>
+        <input class="prop-input" type="color" value="${st.accentColor||'#E94560'}" onchange="propChange(this,'style.accentColor')"/>
+        <input class="prop-input" type="text" value="${st.accentColor||'#E94560'}" style="max-width:80px;" onchange="propChange(this,'style.accentColor')"/>
+      </div>
+      <div class="prop-row"><span class="prop-label">Spacing</span>
+        <input class="prop-input" type="number" value="${st.spacing||12}" onchange="propChange(this,'style.spacing')"/>
+      </div>
+    </div>`;
+  }
+
+  if(type==='skillsBlock'){
+    html+=`<div class="prop-group">
+      <div class="prop-group-title">Skills</div>
+      <div class="prop-row"><span class="prop-label">Title</span>
+        <input class="prop-input" value="${esc(co.title||'')}" onchange="propChange(this,'content.title')"/>
+      </div>
+      <div class="prop-row"><span class="prop-label">Display</span>
+        <select class="prop-select" onchange="propChange(this,'style.displayType')">
+          ${['bar','dot','tag'].map(d=>`<option value="${d}"${st.displayType===d?' selected':''}>${d}</option>`).join('')}
+        </select>
+      </div>
+      <div class="prop-row"><span class="prop-label">Bar Color</span>
+        <input class="prop-input" type="color" value="${st.barColor||'#E94560'}" onchange="propChange(this,'style.barColor')"/>
+      </div>
+      <div class="prop-row"><span class="prop-label">Items JSON</span></div>
+      <textarea class="prop-textarea" style="min-height:100px;" onchange="propChangeJSON(this,'content.items')">${JSON.stringify(co.items||[],null,2)}</textarea>
+    </div>`;
+  }
+
+  // ── Canvas settings (always shown at bottom) ──
+  html+=`<div class="prop-group">
+    <div class="prop-group-title">Canvas Settings</div>
+    <div class="prop-row"><span class="prop-label">Width</span>
+      <input class="prop-input" type="number" value="${canvasW}" onchange="updateCanvas('w',this.value)"/>
+    </div>
+    <div class="prop-row"><span class="prop-label">Height</span>
+      <input class="prop-input" type="number" value="${canvasH}" onchange="updateCanvas('h',this.value)"/>
+    </div>
+    <div class="prop-row"><span class="prop-label">Background</span>
+      <input class="prop-input" type="color" value="${canvasBg}" onchange="updateCanvas('bg',this.value)"/>
+      <input class="prop-input" type="text"  value="${canvasBg}" style="max-width:80px;" onchange="updateCanvas('bg',this.value)"/>
+    </div>
+  </div>`;
+
+  // ── Delete ──
+  html+=`<button class="prop-btn del" onclick="deleteSel()">✕ Delete Element</button>`;
+
+  document.getElementById('props-body').innerHTML=html;
+}
+
+function textStyleInputs(path, s){
+  return `
+    <div class="prop-row"><span class="prop-label">Font</span>
+      <select class="prop-select" onchange="propChange(this,'${path}.fontFamily')">${fontOptions(s.fontFamily)}</select>
+    </div>
+    <div class="prop-row"><span class="prop-label">Size</span>
+      <input class="prop-input" type="number" value="${s.fontSize||12}" onchange="propChange(this,'${path}.fontSize')"/>
+    </div>
+    <div class="prop-row"><span class="prop-label">Weight</span>
+      <select class="prop-select" onchange="propChange(this,'${path}.fontWeight')">${weightOptions(s.fontWeight)}</select>
+    </div>
+    <div class="prop-row"><span class="prop-label">Color</span>
+      <input class="prop-input" type="color" value="${s.color||'#111111'}" onchange="propChange(this,'${path}.color')"/>
+      <input class="prop-input" type="text"  value="${s.color||'#111111'}" style="max-width:80px;" onchange="propChange(this,'${path}.color')"/>
+    </div>
+    <div class="prop-row"><span class="prop-label">Line H</span>
+      <input class="prop-input" type="number" step=".1" value="${s.lineHeight||1.4}" onchange="propChange(this,'${path}.lineHeight')"/>
+    </div>`;
+}
+
+const FONTS=['Inter','Roboto','Open Sans','Lato','Poppins','Montserrat','Raleway','Playfair Display'];
+function fontOptions(cur){return FONTS.map(f=>`<option value="${f}"${cur===f?' selected':''}>${f}</option>`).join('');}
+function weightOptions(cur){return [300,400,500,600,700,800].map(w=>`<option value="${w}"${cur==w?' selected':''}>${w}</option>`).join('');}
+
+// ══════════════════════════════════════════════════════════
+// PROPERTY CHANGE HANDLERS
+// ══════════════════════════════════════════════════════════
+function propChange(input, path){
+  const sec = getSec(selected);
+  if(!sec) return;
+  const val = input.type==='number' ? parseFloat(input.value) :
+              input.type==='range'  ? parseFloat(input.value) : input.value;
+  setNested(sec, path, val);
+  // sync color text+picker pairs
+  const row = input.parentElement;
+  row.querySelectorAll('input[type=color],input[type=text]').forEach(i=>{ if(i!==input) i.value=input.value; });
+  applyVisual(document.getElementById('el_'+selected), sec);
+  // reapply transform
+  const el = document.getElementById('el_'+selected);
+  if(el && path.startsWith('transform')){
+    const tf=sec.transform;
+    el.style.left=tf.x+'px'; el.style.top=tf.y+'px';
+    el.style.width=tf.width+'px'; el.style.minHeight=tf.height+'px';
+    el.style.zIndex=tf.zIndex;
+    el.style.transform=tf.rotation?`rotate(${tf.rotation}deg)`:'';
+  }
+}
+
+function propChangeNested(input, path){ propChange(input, path); }
+
+function propChangeJSON(textarea, path){
+  try{
+    const val=JSON.parse(textarea.value);
+    const sec=getSec(selected);
+    if(!sec) return;
+    setNested(sec, path, val);
+    textarea.style.borderColor='';
+    applyVisual(document.getElementById('el_'+selected), sec);
+  }catch(e){
+    textarea.style.borderColor='var(--red)';
+  }
+}
+
+function updatePropXY(sec){
+  const inputs = document.querySelectorAll('.xy-input');
+  if(inputs.length>=4){
+    inputs[0].value=sec.transform.x;
+    inputs[1].value=sec.transform.y;
+    inputs[2].value=sec.transform.width;
+    inputs[3].value=sec.transform.height;
+  }
+}
+
+function updateCanvas(k, v){
+  if(k==='w'){ canvasW=parseInt(v)||595; CV.style.width=canvasW+'px'; }
+  if(k==='h'){ canvasH=parseInt(v)||842; CV.style.height=canvasH+'px'; }
+  if(k==='bg'){ canvasBg=v; CV.style.background=canvasBg; }
+  setTimeout(fitZ,50);
+}
+
+// deep set: 'style.title.color' → sec.style.title.color = val
+function setNested(obj, path, val){
+  const keys = path.split('.');
+  let cur = obj;
+  for(let i=0;i<keys.length-1;i++){
+    if(cur[keys[i]]===undefined) cur[keys[i]]={};
+    cur=cur[keys[i]];
+  }
+  cur[keys[keys.length-1]]=val;
+}
+
+// ══════════════════════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════════════════════
+function getSec(id){ return sections.find(s=>s.id===id); }
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// ══════════════════════════════════════════════════════════
+// EXPORT JSON
+// ══════════════════════════════════════════════════════════
+function exportJSON(){
+  // clean up internal _subtype from style before export
+  const clean = sections.map(sec=>{
+    const s = JSON.parse(JSON.stringify(sec));
+    if(s.style && s.style._subtype) delete s.style._subtype;
+    return s;
+  });
+
+  const out = {
+    success: true,
+    message: "CV template exported",
+    apiVersion: "2.0.0",
+    data: {
+      cv: { id:"cv_"+Date.now(), userId:"user_001", templateId:"template_custom_"+Date.now(), version:"1.0.0" },
+      canvas: { width:canvasW, height:canvasH, unit:"px", backgroundColor:canvasBg, dpi:300, margin:{top:0,bottom:0,left:0,right:0} },
+      sections: clean,
+    }
+  };
+
+  const str = JSON.stringify(out, null, 2);
+  document.getElementById('json-out').value = str;
+  document.getElementById('json-bytes').textContent = str.length.toLocaleString() + ' bytes · ' + clean.length + ' sections';
+  document.getElementById('json-panel').classList.add('open');
+}
+
+function closeJSON(){ document.getElementById('json-panel').classList.remove('open'); }
+
+function copyJSON(){
+  navigator.clipboard.writeText(document.getElementById('json-out').value).then(()=>{
+    const t=document.getElementById('toast');
+    t.classList.add('show');
+    setTimeout(()=>t.classList.remove('show'),2000);
+  });
+}
+
+function downloadJSON(){
+  const blob = new Blob([document.getElementById('json-out').value],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='cv-template.json';
+  a.click();
+}
+
+// close modal on backdrop click
+document.getElementById('json-panel').addEventListener('click',e=>{
+  if(e.target===e.currentTarget) closeJSON();
+});
+</script>
+</body>
+</html>
