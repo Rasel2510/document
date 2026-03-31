@@ -16,9 +16,9 @@ def to_snake_case(name):
 # TEMPLATES
 # ──────────────────────────────────────────────
 
-def generate_api_file(method, feature_snake, class_prefix, endpoint_method, params, is_multipart):
+def generate_api_file(method, feature_snake, class_prefix, endpoint_method, params, is_multipart, use_model=False, model_name='', model_import=''):
     param_declarations = '\n'.join([f"    required dynamic {p}," for p in params])
-    
+
     if is_multipart:
         body_fields = '\n'.join([
             f'        if ({p} != null)\n          "{p}": await MultipartFile.fromFile({p}, filename: {p}.split(\'/\').last),'
@@ -41,24 +41,31 @@ def generate_api_file(method, feature_snake, class_prefix, endpoint_method, para
       Response response = await {method}Http(Endpoints.{to_camel_case(feature_snake)}(), data);"""
 
     status_check = "response.statusCode == 200 || response.statusCode == 201" if method == 'post' else "response.statusCode == 200"
-
     param_signature = f"{{\n{param_declarations}\n  }}" if params else "()"
-    param_call = "" if not params else f"{{\n{param_declarations}\n  }}"
+
+    if use_model:
+        return_type = model_name
+        success_block = f"        return {model_name}.fromJson(response.data);"
+        model_import_line = f"import 'package:{APP_PACKAGE}/{model_import}';\n"
+    else:
+        return_type = "Map<String, dynamic>"
+        success_block = f"""        final result = response.data as Map<String, dynamic>;
+        ToastUtil.showShortToast("Success");
+        return result;"""
+        model_import_line = ""
 
     return f"""import 'package:{APP_PACKAGE}/constants/common_imports.dart';
-
+{model_import_line}
 final class {class_prefix}Api {{
   static final {class_prefix}Api _singleton = {class_prefix}Api._internal();
   {class_prefix}Api._internal();
   static {class_prefix}Api get instance => _singleton;
 
-  Future<Map<String, dynamic>> {to_camel_case(feature_snake)}Api({param_signature if params else ''}) async {{
+  Future<{return_type}> {to_camel_case(feature_snake)}Api({param_signature if params else ''}) async {{
     try {{
 {data_block}
       if ({status_check}) {{
-        final result = response.data as Map<String, dynamic>;
-        ToastUtil.showShortToast("Success");
-        return result;
+{success_block}
       }} else {{
         throw DataSource.DEFAULT.getFailure();
       }}
@@ -70,19 +77,23 @@ final class {class_prefix}Api {{
 }}
 """
 
-def generate_rx_file(feature_snake, class_prefix, feature_folder, params):
+def generate_rx_file(feature_snake, class_prefix, feature_folder, params, use_model=False, model_name='', model_import=''):
     param_declarations = '\n'.join([f"    required dynamic {p}," for p in params])
     param_pass = '\n'.join([f"        {p}: {p}," for p in params])
 
     param_signature = f"{{\n{param_declarations}\n  }}" if params else "()"
     param_call = f"(\n{param_pass}\n      )" if params else "()"
 
+    response_type = model_name if use_model else "Map<String, dynamic>"
+    empty_value = f"{model_name}()" if use_model else "{}"
+    model_import_line = f"import 'package:{APP_PACKAGE}/{model_import}';\n" if use_model else ""
+
     return f"""import 'dart:developer';
 
 import 'package:{APP_PACKAGE}/constants/common_imports.dart';
 import 'package:{APP_PACKAGE}/feature/{feature_folder}/data/{feature_snake}/{feature_snake}_api.dart';
-
-final class {class_prefix}Rx extends RxResponseInt<Map<String, dynamic>> {{
+{model_import_line}
+final class {class_prefix}Rx extends RxResponseInt<{response_type}> {{
   final api = {class_prefix}Api.instance;
 
   {class_prefix}Rx({{required super.empty, required super.dataFetcher}});
@@ -100,7 +111,7 @@ final class {class_prefix}Rx extends RxResponseInt<Map<String, dynamic>> {{
   }}
 
   @override
-  handleSuccessWithReturn(Map<String, dynamic> data) {{
+  handleSuccessWithReturn({response_type} data) {{
     dataFetcher.sink.add(data);
     return super.handleSuccessWithReturn(data);
   }}
@@ -151,6 +162,18 @@ def main():
         print("📸 Image param detected — use multipart/form-data? (y/n): ", end="")
         is_multipart = input().strip().lower() == 'y'
 
+    print("📦 Response type — Model or Map? (model/map): ", end="")
+    response_choice = input().strip().lower()
+    use_model = response_choice == 'model'
+
+    model_name = ''
+    model_import = ''
+    if use_model:
+        print("🧩 Model class name (e.g. GetProfileModel): ", end="")
+        model_name = input().strip()
+        print(f"📂 Model import path (e.g. feature/profile/model/profile/get_profile_model.dart): ", end="")
+        model_import = input().strip()
+
     print("\n📂 Output folder path (leave blank for current directory): ", end="")
     output_root = input().strip() or "."
 
@@ -159,8 +182,8 @@ def main():
     os.makedirs(output_dir, exist_ok=True)
 
     # Generate files
-    api_content = generate_api_file(method, feature_snake, class_prefix, method, params, is_multipart)
-    rx_content = generate_rx_file(feature_snake, class_prefix, feature_folder, params)
+    api_content = generate_api_file(method, feature_snake, class_prefix, method, params, is_multipart, use_model, model_name, model_import)
+    rx_content = generate_rx_file(feature_snake, class_prefix, feature_folder, params, use_model, model_name, model_import)
 
     api_path = os.path.join(output_dir, f"{feature_snake}_api.dart")
     rx_path = os.path.join(output_dir, f"{feature_snake}_rx.dart")
