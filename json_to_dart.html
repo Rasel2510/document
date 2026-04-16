@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>✨ JSON to Dart Model · Flutter Generator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(145deg, #0d1117 0%, #161b22 100%);
+            min-height: 100vh;
+            padding: 24px;
+            color: #e6edf3;
+        }
+
+        .wrapper {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        .header {
+            margin-bottom: 28px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 600;
+            background: linear-gradient(135deg, #58a6ff, #bc8cff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            letter-spacing: -0.02em;
+        }
+
+        .subhead {
+            color: #8b949e;
+            font-size: 1rem;
+            margin-top: 8px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        /* Toggle Switch */
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: #21262d;
+            padding: 6px 10px;
+            border-radius: 40px;
+            border: 1px solid #30363d;
+        }
+
+        .toggle-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            color: #c9d1d9;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 48px;
+            height: 24px;
+            background: #0d1117;
+            border-radius: 30px;
+            border: 1px solid #30363d;
+            transition: all 0.2s;
+        }
+
+        .toggle-switch.active {
+            background: #238636;
+            border-color: #2ea043;
+        }
+
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            width: 18px;
+            height: 18px;
+            background: white;
+            border-radius: 50%;
+            top: 2px;
+            left: 3px;
+            transition: transform 0.2s;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        }
+
+        .toggle-switch.active::after {
+            transform: translateX(22px);
+        }
+
+        .mode-text {
+            min-width: 100px;
+            font-weight: 500;
+            color: #58a6ff;
+        }
+
+        /* Main Grid */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+
+        /* Cards */
+        .card {
+            background: #161b22;
+            border-radius: 20px;
+            border: 1px solid #30363d;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+            overflow: hidden;
+            backdrop-filter: blur(4px);
+            transition: transform 0.2s, border-color 0.2s;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card:hover {
+            border-color: #58a6ff55;
+        }
+
+        /* Input card - natural height */
+        .input-card {
+            height: fit-content;
+        }
+
+        /* Output card - fixed height, forces internal scroll */
+        .output-card {
+            height: 650px;
+            max-height: 85vh;
+        }
+
+        .card-header {
+            padding: 18px 20px;
+            border-bottom: 1px solid #30363d;
+            background: #0d1117cc;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+
+        .card-header h3 {
+            font-weight: 500;
+            font-size: 1.2rem;
+            color: #c9d1d9;
+        }
+
+        /* Card body flex column layout */
+        .card-body {
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            min-height: 0;  /* Important for scroll */
+        }
+
+        /* Input card body doesn't need flex scroll */
+        .input-card-body {
+            display: block;
+        }
+
+        /* Form Elements */
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: #8b949e;
+        }
+
+        textarea, input {
+            width: 100%;
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 12px;
+            padding: 14px 16px;
+            font-size: 14px;
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            color: #e6edf3;
+            resize: vertical;
+            transition: border 0.15s, box-shadow 0.15s;
+        }
+
+        textarea:focus, input:focus {
+            outline: none;
+            border-color: #58a6ff;
+            box-shadow: 0 0 0 3px #1f6feb33;
+        }
+
+        textarea {
+            height: 300px;
+            line-height: 1.5;
+        }
+
+        /* Buttons */
+        .btn {
+            background: #21262d;
+            border: 1px solid #30363d;
+            color: #c9d1d9;
+            padding: 12px 18px;
+            border-radius: 40px;
+            font-weight: 500;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.15s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: #238636;
+            border-color: #2ea043;
+            color: white;
+            box-shadow: 0 2px 6px #23863633;
+        }
+
+        .btn-primary:hover {
+            background: #2ea043;
+            border-color: #3fb950;
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: #21262d;
+            border-color: #30363d;
+        }
+
+        .btn-secondary:hover {
+            background: #30363d;
+            border-color: #8b949e;
+        }
+
+        .btn-block {
+            width: 100%;
+        }
+
+        /* Scrollable code area */
+        .code-scroll-container {
+            flex: 1;
+            min-height: 0;
+            margin-bottom: 16px;
+        }
+
+        .code-block {
+            background: #0d1117;
+            border-radius: 16px;
+            padding: 18px;
+            border: 1px solid #30363d;
+            height: 100%;
+            overflow: auto;  /* This makes it scroll */
+        }
+
+        pre {
+            margin: 0;
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            font-size: 13px;
+            line-height: 1.5;
+            color: #e6edf3;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        /* Copy button container fixed at bottom */
+        .copy-btn-container {
+            flex-shrink: 0;
+        }
+
+        .error-message {
+            color: #f85149;
+            font-size: 0.9rem;
+            margin-top: 12px;
+            padding: 10px 16px;
+            background: #da363322;
+            border-radius: 12px;
+            border-left: 4px solid #f85149;
+        }
+
+        /* Footer */
+        .footer {
+            margin-top: 24px;
+            text-align: center;
+            color: #6e7681;
+            font-size: 0.85rem;
+        }
+
+        /* Badge */
+        .badge {
+            background: #30363d;
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            color: #8b949e;
+        }
+
+        /* Responsive */
+        @media (max-width: 800px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+            body { padding: 16px; }
+            .header h1 { font-size: 2rem; }
+            .output-card {
+                height: 500px;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="wrapper">
+    <div class="header">
+        <h1>⚡ Dart Model Generator</h1>
+        <div class="subhead">
+            <span>Paste JSON → Get Flutter-ready class</span>
+            <div class="toggle-container">
+                <span class="mode-text" id="modeStatus">Nullable</span>
+                <label class="toggle-label">
+                    <input type="checkbox" id="nullableToggle" style="display:none;">
+                    <div class="toggle-switch active" id="toggleSwitch"></div>
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <div class="main-grid">
+        <!-- Left Panel: Input (auto height) -->
+        <div class="card input-card">
+            <div class="card-header">
+                <h3>📋 Input JSON</h3>
+                <span class="badge">JSON5 supported</span>
+            </div>
+            <div class="card-body input-card-body">
+                <div class="input-group">
+                    <label class="input-label">Paste your JSON here</label>
+                    <textarea id="jsonInput" placeholder='{"id": 1, "name": "Alice", "email": null, "address": {"city": "NYC"}}'></textarea>
+                </div>
+                <div class="input-group">
+                    <label class="input-label">Class name</label>
+                    <input type="text" id="classNameInput" placeholder="User" value="User">
+                </div>
+                <button class="btn btn-primary btn-block" onclick="generateDartModel()">
+                    <span>✨</span> Generate Dart Model
+                </button>
+                <div id="errorMessage" class="error-message"></div>
+            </div>
+        </div>
+
+        <!-- Right Panel: Output (fixed height, internal scroll) -->
+        <div class="card output-card">
+            <div class="card-header">
+                <h3>📄 Generated Dart Code</h3>
+                <span class="badge" id="nullabilityBadge">all fields nullable</span>
+            </div>
+            <div class="card-body">
+                <!-- This container grows and allows its child to scroll -->
+                <div class="code-scroll-container">
+                    <div class="code-block">
+                        <pre id="outputCode">// Your Dart model will appear here</pre>
+                    </div>
+                </div>
+                <!-- Copy button fixed at bottom -->
+                <div class="copy-btn-container">
+                    <button class="btn btn-secondary" onclick="copyToClipboard()">
+                        📋 Copy to Clipboard
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="footer">
+        ⚡ Built for Flutter · All fields optional/nullable · Nested objects & lists supported
+    </div>
+</div>
+
+<script>
+    (function() {
+        // ----- UI State -----
+        const toggleCheckbox = document.getElementById('nullableToggle');
+        const toggleSwitchDiv = document.getElementById('toggleSwitch');
+        const modeStatus = document.getElementById('modeStatus');
+        const nullabilityBadge = document.getElementById('nullabilityBadge');
+
+        let isNullableMode = true;
+
+        function updateToggleUI() {
+            if (isNullableMode) {
+                toggleSwitchDiv.classList.add('active');
+                modeStatus.textContent = 'Nullable';
+                nullabilityBadge.textContent = 'all fields nullable';
+            } else {
+                toggleSwitchDiv.classList.remove('active');
+                modeStatus.textContent = 'Non-Nullable';
+                nullabilityBadge.textContent = 'fields required (non-null)';
+            }
+            if (document.getElementById('jsonInput').value.trim()) {
+                generateDartModel();
+            }
+        }
+
+        toggleSwitchDiv.addEventListener('click', () => {
+            isNullableMode = !isNullableMode;
+            toggleCheckbox.checked = isNullableMode;
+            updateToggleUI();
+        });
+
+        toggleCheckbox.checked = isNullableMode;
+        updateToggleUI();
+
+        // ----- Utility functions -----
+        function toCamelCase(str) {
+            return str.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+        }
+
+        function toPascalCase(str) {
+            return str.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join('');
+        }
+
+        function inferDartType(value, keyName) {
+            if (value === null) return 'dynamic';
+            if (typeof value === 'boolean') return 'bool';
+            if (typeof value === 'number') {
+                return Number.isInteger(value) ? 'int' : 'double';
+            }
+            if (typeof value === 'string') return 'String';
+            if (Array.isArray(value)) {
+                if (value.length > 0) {
+                    const itemType = inferDartType(value[0], keyName + 'Item');
+                    return `List<${itemType}>`;
+                }
+                return 'List<dynamic>';
+            }
+            if (typeof value === 'object') {
+                return toPascalCase(keyName);
+            }
+            return 'dynamic';
+        }
+
+        // ----- Core generator -----
+        function generateClassCode(className, jsonObj, indent = 0, nullableMode = true) {
+            const fields = [];
+            const nestedClasses = [];
+            const indentStr = '  '.repeat(indent);
+            
+            for (const [key, value] of Object.entries(jsonObj)) {
+                const fieldName = toCamelCase(key);
+                let dartType = inferDartType(value, key);
+                
+                if (value && typeof value === 'object' && !Array.isArray(value) && 
+                    !['String', 'int', 'double', 'bool', 'dynamic'].includes(dartType)) {
+                    const [nestedCode] = generateClassCode(dartType, value, indent + 1, nullableMode);
+                    nestedClasses.push(nestedCode);
+                    fields.push({ fieldName, dartType, jsonKey: key });
+                } else {
+                    fields.push({ fieldName, dartType, jsonKey: key });
+                }
+            }
+            
+            let lines = [];
+            lines.push(`${indentStr}class ${className} {`);
+            
+            for (const f of fields) {
+                const typeWithNull = nullableMode ? `${f.dartType}?` : f.dartType;
+                lines.push(`${indentStr}  final ${typeWithNull} ${f.fieldName};`);
+            }
+            
+            if (nullableMode) {
+                lines.push(`${indentStr}  ${className}({`);
+                for (const f of fields) {
+                    lines.push(`${indentStr}    this.${f.fieldName},`);
+                }
+                lines.push(`${indentStr}  });`);
+            } else {
+                lines.push(`${indentStr}  ${className}({`);
+                for (const f of fields) {
+                    lines.push(`${indentStr}    required this.${f.fieldName},`);
+                }
+                lines.push(`${indentStr}  });`);
+            }
+            
+            lines.push(`${indentStr}  factory ${className}.fromJson(Map<String, dynamic> json) {`);
+            lines.push(`${indentStr}    return ${className}(`);
+            for (const f of fields) {
+                const { fieldName, dartType, jsonKey } = f;
+                
+                if (dartType.startsWith('List<')) {
+                    const innerType = dartType.match(/List<(.*)>/)[1];
+                    if (innerType[0] === innerType[0].toUpperCase()) {
+                        if (nullableMode) {
+                            lines.push(`${indentStr}      ${fieldName}: (json['${jsonKey}'] as List?)?.map((e) => ${innerType}.fromJson(e)).toList(),`);
+                        } else {
+                            lines.push(`${indentStr}      ${fieldName}: (json['${jsonKey}'] as List).map((e) => ${innerType}.fromJson(e)).toList(),`);
+                        }
+                    } else {
+                        if (nullableMode) {
+                            lines.push(`${indentStr}      ${fieldName}: json['${jsonKey}'] != null ? List<${innerType}>.from(json['${jsonKey}']) : null,`);
+                        } else {
+                            lines.push(`${indentStr}      ${fieldName}: List<${innerType}>.from(json['${jsonKey}']),`);
+                        }
+                    }
+                } else if (dartType[0] === dartType[0].toUpperCase() && !['String', 'int', 'double', 'bool'].includes(dartType)) {
+                    if (nullableMode) {
+                        lines.push(`${indentStr}      ${fieldName}: json['${jsonKey}'] != null ? ${dartType}.fromJson(json['${jsonKey}']) : null,`);
+                    } else {
+                        lines.push(`${indentStr}      ${fieldName}: ${dartType}.fromJson(json['${jsonKey}']),`);
+                    }
+                } else {
+                    lines.push(`${indentStr}      ${fieldName}: json['${jsonKey}'],`);
+                }
+            }
+            lines.push(`${indentStr}    );`);
+            lines.push(`${indentStr}  }`);
+            
+            lines.push(`${indentStr}  Map<String, dynamic> toJson() {`);
+            lines.push(`${indentStr}    return {`);
+            for (const f of fields) {
+                const { fieldName, dartType, jsonKey } = f;
+                if (dartType.startsWith('List<')) {
+                    const innerType = dartType.match(/List<(.*)>/)[1];
+                    if (innerType[0] === innerType[0].toUpperCase()) {
+                        if (nullableMode) {
+                            lines.push(`${indentStr}      '${jsonKey}': ${fieldName}?.map((e) => e.toJson()).toList(),`);
+                        } else {
+                            lines.push(`${indentStr}      '${jsonKey}': ${fieldName}.map((e) => e.toJson()).toList(),`);
+                        }
+                    } else {
+                        lines.push(`${indentStr}      '${jsonKey}': ${fieldName},`);
+                    }
+                } else if (dartType[0] === dartType[0].toUpperCase() && !['String', 'int', 'double', 'bool'].includes(dartType)) {
+                    if (nullableMode) {
+                        lines.push(`${indentStr}      '${jsonKey}': ${fieldName}?.toJson(),`);
+                    } else {
+                        lines.push(`${indentStr}      '${jsonKey}': ${fieldName}.toJson(),`);
+                    }
+                } else {
+                    lines.push(`${indentStr}      '${jsonKey}': ${fieldName},`);
+                }
+            }
+            lines.push(`${indentStr}    };`);
+            lines.push(`${indentStr}  }`);
+            
+            lines.push(`${indentStr}}`);
+            
+            const classCode = lines.join('\n');
+            const allCode = [...nestedClasses, classCode].join('\n\n');
+            return [allCode, fields];
+        }
+
+        window.generateDartModel = function() {
+            const jsonText = document.getElementById('jsonInput').value.trim();
+            const classNameInput = document.getElementById('classNameInput').value.trim();
+            const errorDiv = document.getElementById('errorMessage');
+            const outputPre = document.getElementById('outputCode');
+            
+            errorDiv.textContent = '';
+            
+            if (!jsonText) {
+                errorDiv.textContent = 'Please paste JSON.';
+                return;
+            }
+            
+            let jsonData;
+            try {
+                jsonData = JSON.parse(jsonText);
+            } catch (e) {
+                errorDiv.textContent = 'Invalid JSON: ' + e.message;
+                return;
+            }
+            
+            let className = classNameInput || 'GeneratedModel';
+            className = toPascalCase(className);
+            
+            try {
+                const [dartCode] = generateClassCode(className, jsonData, 0, isNullableMode);
+                outputPre.textContent = dartCode;
+            } catch (e) {
+                errorDiv.textContent = 'Generation error: ' + e.message;
+                console.error(e);
+            }
+        };
+
+        window.copyToClipboard = function() {
+            const code = document.getElementById('outputCode').textContent;
+            navigator.clipboard.writeText(code).then(() => {
+                alert('✅ Copied to clipboard!');
+            }).catch(() => {
+                alert('❌ Copy failed. Select and copy manually.');
+            });
+        };
+
+        window.onload = function() {
+            const example = {
+                "id": 1,
+                "name": "Alice",
+                "email": null,
+                "isActive": true,
+                "score": 98.6,
+                "tags": ["dev", "flutter"],
+                "address": {
+                    "street": "123 Main St",
+                    "city": "Springfield"
+                }
+            };
+            document.getElementById('jsonInput').value = JSON.stringify(example, null, 2);
+            generateDartModel();
+        };
+    })();
+</script>
+</body>
+</html>
