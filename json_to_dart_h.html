@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JSON to Dart Model (All Nullable)</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #1e1e1e;
+            color: #d4d4d4;
+        }
+        h1 {
+            color: #4ec9b0;
+        }
+        .container {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .input-panel {
+            flex: 1;
+            min-width: 300px;
+        }
+        .output-panel {
+            flex: 1;
+            min-width: 300px;
+        }
+        textarea {
+            width: 100%;
+            height: 300px;
+            background: #252526;
+            color: #d4d4d4;
+            border: 1px solid #3c3c3c;
+            padding: 10px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 14px;
+            resize: vertical;
+            border-radius: 4px;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            background: #252526;
+            color: #d4d4d4;
+            border: 1px solid #3c3c3c;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        button {
+            background: #0e639c;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            font-size: 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+            font-weight: bold;
+        }
+        button:hover {
+            background: #1177bb;
+        }
+        pre {
+            background: #252526;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 14px;
+            border: 1px solid #3c3c3c;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .error {
+            color: #f48771;
+            margin-top: 10px;
+        }
+        .label {
+            font-weight: bold;
+            margin-top: 10px;
+            color: #9cdcfe;
+        }
+        .note {
+            font-size: 12px;
+            color: #808080;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔄 JSON to Dart Model Generator</h1>
+    <p style="margin-bottom: 20px;">All fields are nullable (<code>?</code>) and constructor parameters are optional.</p>
+    
+    <div class="container">
+        <div class="input-panel">
+            <div class="label">Paste your JSON here:</div>
+            <textarea id="jsonInput" placeholder='{"id": 1, "name": "Alice", "email": null, "address": {"city": "NYC"}}'></textarea>
+            
+            <div class="label">Class name (e.g., User):</div>
+            <input type="text" id="classNameInput" placeholder="User" value="User">
+            
+            <button onclick="generateDartModel()">Generate Dart Model</button>
+            
+            <div id="errorMessage" class="error"></div>
+        </div>
+        
+        <div class="output-panel">
+            <div class="label">Generated Dart Code:</div>
+            <pre id="outputCode">// Your Dart model will appear here</pre>
+            <button onclick="copyToClipboard()" style="margin-top: 10px; background: #3c3c3c;">📋 Copy to Clipboard</button>
+        </div>
+    </div>
+
+    <script>
+        // Utility: snake_case or any to camelCase
+        function toCamelCase(str) {
+            return str.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+        }
+
+        // Utility: to PascalCase
+        function toPascalCase(str) {
+            return str.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join('');
+        }
+
+        // Infer Dart type from a sample value
+        function inferDartType(value, keyName) {
+            if (value === null) return 'dynamic';
+            if (typeof value === 'boolean') return 'bool';
+            if (typeof value === 'number') {
+                return Number.isInteger(value) ? 'int' : 'double';
+            }
+            if (typeof value === 'string') return 'String';
+            if (Array.isArray(value)) {
+                if (value.length > 0) {
+                    const itemType = inferDartType(value[0], keyName + 'Item');
+                    return `List<${itemType}>`;
+                }
+                return 'List<dynamic>';
+            }
+            if (typeof value === 'object') {
+                return toPascalCase(keyName);
+            }
+            return 'dynamic';
+        }
+
+        // Recursively generate class code
+        function generateClassCode(className, jsonObj, indent = 0) {
+            const fields = [];
+            const nestedClasses = [];
+            const indentStr = '  '.repeat(indent);
+            
+            for (const [key, value] of Object.entries(jsonObj)) {
+                const fieldName = toCamelCase(key);
+                let dartType = inferDartType(value, key);
+                
+                // Handle nested objects
+                if (value && typeof value === 'object' && !Array.isArray(value) && 
+                    !['String', 'int', 'double', 'bool', 'dynamic'].includes(dartType)) {
+                    const [nestedCode] = generateClassCode(dartType, value, indent + 1);
+                    nestedClasses.push(nestedCode);
+                    fields.push({ fieldName, dartType, jsonKey: key });
+                } else {
+                    fields.push({ fieldName, dartType, jsonKey: key });
+                }
+            }
+            
+            let lines = [];
+            lines.push(`${indentStr}class ${className} {`);
+            
+            // Fields (all nullable)
+            for (const f of fields) {
+                lines.push(`${indentStr}  final ${f.dartType}? ${f.fieldName};`);
+            }
+            
+            // Constructor (all optional named parameters)
+            lines.push(`${indentStr}  ${className}({`);
+            for (const f of fields) {
+                lines.push(`${indentStr}    this.${f.fieldName},`);
+            }
+            lines.push(`${indentStr}  });`);
+            
+            // fromJson factory
+            lines.push(`${indentStr}  factory ${className}.fromJson(Map<String, dynamic> json) {`);
+            lines.push(`${indentStr}    return ${className}(`);
+            for (const f of fields) {
+                const { fieldName, dartType, jsonKey } = f;
+                
+                if (dartType.startsWith('List<')) {
+                    const innerType = dartType.match(/List<(.*)>/)[1];
+                    if (innerType[0] === innerType[0].toUpperCase()) {
+                        // List of custom objects
+                        lines.push(`${indentStr}      ${fieldName}: (json['${jsonKey}'] as List?)?.map((e) => ${innerType}.fromJson(e)).toList(),`);
+                    } else {
+                        // List of primitives
+                        lines.push(`${indentStr}      ${fieldName}: json['${jsonKey}'] != null ? List<${innerType}>.from(json['${jsonKey}']) : null,`);
+                    }
+                } else if (dartType[0] === dartType[0].toUpperCase() && !['String', 'int', 'double', 'bool'].includes(dartType)) {
+                    // Custom object
+                    lines.push(`${indentStr}      ${fieldName}: json['${jsonKey}'] != null ? ${dartType}.fromJson(json['${jsonKey}']) : null,`);
+                } else {
+                    // Primitive or dynamic
+                    lines.push(`${indentStr}      ${fieldName}: json['${jsonKey}'],`);
+                }
+            }
+            lines.push(`${indentStr}    );`);
+            lines.push(`${indentStr}  }`);
+            
+            // toJson method
+            lines.push(`${indentStr}  Map<String, dynamic> toJson() {`);
+            lines.push(`${indentStr}    return {`);
+            for (const f of fields) {
+                const { fieldName, dartType, jsonKey } = f;
+                if (dartType.startsWith('List<')) {
+                    const innerType = dartType.match(/List<(.*)>/)[1];
+                    if (innerType[0] === innerType[0].toUpperCase()) {
+                        lines.push(`${indentStr}      '${jsonKey}': ${fieldName}?.map((e) => e.toJson()).toList(),`);
+                    } else {
+                        lines.push(`${indentStr}      '${jsonKey}': ${fieldName},`);
+                    }
+                } else if (dartType[0] === dartType[0].toUpperCase() && !['String', 'int', 'double', 'bool'].includes(dartType)) {
+                    lines.push(`${indentStr}      '${jsonKey}': ${fieldName}?.toJson(),`);
+                } else {
+                    lines.push(`${indentStr}      '${jsonKey}': ${fieldName},`);
+                }
+            }
+            lines.push(`${indentStr}    };`);
+            lines.push(`${indentStr}  }`);
+            
+            lines.push(`${indentStr}}`);
+            
+            const classCode = lines.join('\n');
+            const allCode = [...nestedClasses, classCode].join('\n\n');
+            return [allCode, fields];
+        }
+
+        function generateDartModel() {
+            const jsonText = document.getElementById('jsonInput').value.trim();
+            const classNameInput = document.getElementById('classNameInput').value.trim();
+            const errorDiv = document.getElementById('errorMessage');
+            const outputPre = document.getElementById('outputCode');
+            
+            errorDiv.textContent = '';
+            
+            if (!jsonText) {
+                errorDiv.textContent = 'Please paste JSON.';
+                return;
+            }
+            
+            let jsonData;
+            try {
+                jsonData = JSON.parse(jsonText);
+            } catch (e) {
+                errorDiv.textContent = 'Invalid JSON: ' + e.message;
+                return;
+            }
+            
+            let className = classNameInput || 'GeneratedModel';
+            className = toPascalCase(className);
+            
+            try {
+                const [dartCode] = generateClassCode(className, jsonData);
+                outputPre.textContent = dartCode;
+            } catch (e) {
+                errorDiv.textContent = 'Generation error: ' + e.message;
+            }
+        }
+
+        function copyToClipboard() {
+            const code = document.getElementById('outputCode').textContent;
+            navigator.clipboard.writeText(code).then(() => {
+                alert('Copied to clipboard!');
+            }).catch(() => {
+                alert('Failed to copy. Select and copy manually.');
+            });
+        }
+
+        // Load example on page load
+        window.onload = function() {
+            const example = {
+                "id": 1,
+                "name": "Alice",
+                "email": null,
+                "isActive": true,
+                "score": 98.6,
+                "tags": ["dev", "flutter"],
+                "address": {
+                    "street": "123 Main St",
+                    "city": "Springfield"
+                }
+            };
+            document.getElementById('jsonInput').value = JSON.stringify(example, null, 2);
+            generateDartModel();
+        };
+    </script>
+</body>
+</html>
