@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rizz Rater 🔥</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0a0a0f; --surface: #13131a; --surface2: #1c1c28;
+    --border: #2a2a3d; --accent: #ff3c6e; --accent2: #ff8c42;
+    --gold: #ffd166; --text: #f0f0f8; --muted: #7070a0;
+    --green: #06d6a0; --red: #ef233c;
+  }
+  body { background: var(--bg); color: var(--text); font-family: 'Syne', sans-serif; min-height: 100vh; overflow-x: hidden; }
+  body::before {
+    content: ''; position: fixed; inset: 0;
+    background: radial-gradient(ellipse at 20% 20%, rgba(255,60,110,0.08) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 80%, rgba(255,140,66,0.06) 0%, transparent 60%);
+    pointer-events: none; z-index: 0;
+  }
+  .container { max-width: 760px; margin: 0 auto; padding: 2.5rem 1.5rem 4rem; position: relative; z-index: 1; }
+
+  /* Header */
+  .header { text-align: center; margin-bottom: 2rem; animation: fadeUp 0.6s ease both; }
+  .header .badge {
+    display: inline-block; background: rgba(255,60,110,0.15); border: 1px solid rgba(255,60,110,0.3);
+    color: var(--accent); font-family: 'DM Mono', monospace; font-size: 11px;
+    letter-spacing: 0.15em; padding: 5px 14px; border-radius: 999px; margin-bottom: 1rem;
+  }
+  h1 {
+    font-size: clamp(2.5rem, 8vw, 4rem); font-weight: 800; line-height: 1;
+    background: linear-gradient(135deg, #ff3c6e, #ff8c42, #ffd166);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 0.75rem;
+  }
+  .subtitle { color: var(--muted); font-size: 15px; font-weight: 400; }
+
+  /* Status */
+  .status-bar {
+    display: flex; align-items: center; gap: 10px; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 12px; padding: 12px 16px;
+    margin-bottom: 1.25rem; font-family: 'DM Mono', monospace; font-size: 13px;
+    animation: fadeUp 0.6s 0.1s ease both;
+  }
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); flex-shrink: 0; transition: background 0.3s; }
+  .status-dot.online { background: var(--green); box-shadow: 0 0 8px var(--green); animation: pulse 2s infinite; }
+  .status-dot.offline { background: var(--red); }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+  .status-text { color: var(--muted); }
+  .status-text span { color: var(--text); }
+  .model-select {
+    margin-left: auto; background: var(--surface2); border: 1px solid var(--border);
+    color: var(--text); font-family: 'DM Mono', monospace; font-size: 12px;
+    padding: 5px 10px; border-radius: 8px; cursor: pointer; outline: none;
+  }
+
+  /* Tabs */
+  .tabs {
+    display: flex; gap: 0; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 14px; padding: 4px; margin-bottom: 1.25rem;
+    animation: fadeUp 0.6s 0.15s ease both;
+  }
+  .tab-btn {
+    flex: 1; padding: 10px; border-radius: 10px; border: none; background: none;
+    color: var(--muted); font-family: 'Syne', sans-serif; font-size: 14px;
+    font-weight: 600; cursor: pointer; transition: all 0.2s;
+  }
+  .tab-btn.active { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: white; }
+
+  /* Card */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 1.75rem; margin-bottom: 1.25rem; animation: fadeUp 0.6s 0.2s ease both; }
+  .card-label { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.12em; color: var(--accent); text-transform: uppercase; margin-bottom: 12px; }
+
+  textarea {
+    width: 100%; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 12px; color: var(--text); font-family: 'DM Mono', monospace;
+    font-size: 13px; line-height: 1.7; padding: 14px 16px; resize: vertical;
+    min-height: 140px; outline: none; transition: border-color 0.2s;
+  }
+  textarea:focus { border-color: rgba(255,60,110,0.4); }
+  textarea::placeholder { color: var(--muted); }
+
+  .row { display: flex; gap: 12px; margin-top: 12px; }
+  .col { flex: 1; }
+  .col-label { font-size: 11px; color: var(--muted); margin-bottom: 6px; font-family: 'DM Mono', monospace; }
+
+  select {
+    width: 100%; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 10px; color: var(--text); font-family: 'Syne', sans-serif;
+    font-size: 13px; padding: 10px 12px; outline: none; cursor: pointer;
+    transition: border-color 0.2s; appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%237070a0' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 12px center;
+  }
+  select:focus { border-color: rgba(255,60,110,0.4); }
+
+  /* Vibes */
+  .vibes { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .vibe { padding: 7px 16px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface2); color: var(--muted); font-size: 13px; cursor: pointer; transition: all 0.2s; font-family: 'Syne', sans-serif; }
+  .vibe:hover { border-color: var(--accent); color: var(--text); }
+  .vibe.active { background: rgba(255,60,110,0.15); border-color: var(--accent); color: var(--accent); font-weight: 600; }
+
+  /* Rate btn */
+  .rate-btn {
+    width: 100%; padding: 16px; border-radius: 14px; border: none;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: white; font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 700;
+    cursor: pointer; margin-top: 1.25rem; letter-spacing: 0.03em;
+    transition: opacity 0.2s, transform 0.1s; animation: fadeUp 0.6s 0.3s ease both;
+    position: relative; overflow: hidden;
+  }
+  .rate-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+  .rate-btn:active { transform: translateY(0); }
+  .rate-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+  .rate-btn .shimmer { position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent); transform: translateX(-100%); animation: shimmer 2s infinite; }
+  @keyframes shimmer { to { transform: translateX(200%); } }
+
+  /* Result */
+  .result-card { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 2rem; margin-top: 1.5rem; display: none; animation: fadeUp 0.5s ease both; }
+  .score-ring { text-align: center; margin-bottom: 1.75rem; }
+  .score-num { font-size: 5rem; font-weight: 800; line-height: 1; background: linear-gradient(135deg, #ff3c6e, #ff8c42); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .score-denom { font-size: 1.5rem; color: var(--muted); font-weight: 400; }
+  .score-label { font-size: 13px; color: var(--muted); font-family: 'DM Mono', monospace; margin-top: 4px; }
+  .verdict { background: var(--surface2); border-left: 3px solid var(--accent); border-radius: 0 10px 10px 0; padding: 12px 16px; font-size: 14px; line-height: 1.6; margin-bottom: 1.5rem; font-style: italic; }
+  .streaming-text { font-family: 'DM Mono', monospace; font-size: 13px; line-height: 1.8; color: #c0c0e0; white-space: pre-wrap; word-break: break-word; }
+
+  /* Loading */
+  .loading { display: none; text-align: center; padding: 2rem; margin-top: 1.5rem; }
+  .loading.show { display: block; }
+  .loading-dots { display: inline-flex; gap: 6px; margin-bottom: 1rem; }
+  .loading-dots span { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: bounce 1.2s infinite; }
+  .loading-dots span:nth-child(2) { animation-delay: 0.2s; background: var(--accent2); }
+  .loading-dots span:nth-child(3) { animation-delay: 0.4s; background: var(--gold); }
+  @keyframes bounce { 0%,80%,100%{transform:scale(0.6);opacity:0.4} 40%{transform:scale(1);opacity:1} }
+  .loading-msg { color: var(--muted); font-size: 14px; font-family: 'DM Mono', monospace; }
+
+  /* Error */
+  .error-box { background: rgba(239,35,60,0.1); border: 1px solid rgba(239,35,60,0.3); border-radius: 12px; padding: 14px 16px; color: #ff6b80; font-size: 13px; font-family: 'DM Mono', monospace; margin-top: 1rem; display: none; line-height: 1.6; }
+
+  /* Hint */
+  .hint { background: rgba(255,209,102,0.08); border: 1px solid rgba(255,209,102,0.2); border-radius: 12px; padding: 14px 16px; font-size: 13px; color: var(--gold); font-family: 'DM Mono', monospace; margin-bottom: 1.25rem; line-height: 1.7; animation: fadeUp 0.6s 0.15s ease both; }
+  .hint strong { display: block; margin-bottom: 4px; }
+  .format-hint { background: var(--surface2); border-radius: 10px; padding: 10px 14px; font-family: 'DM Mono', monospace; font-size: 12px; color: var(--muted); line-height: 1.8; margin-bottom: 10px; }
+
+  /* Chat */
+  .chat-section { display: none; }
+  .chat-section.show { display: block; animation: fadeUp 0.4s ease both; }
+  .rater-section { display: block; }
+  .rater-section.hide { display: none; }
+
+  .quick-asks { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 12px; }
+  .quick-ask { padding: 6px 14px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface2); color: var(--muted); font-size: 12px; cursor: pointer; transition: all 0.15s; font-family: 'Syne', sans-serif; }
+  .quick-ask:hover { border-color: var(--accent); color: var(--text); }
+
+  .chat-log {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 20px;
+    padding: 1.25rem; min-height: 300px; max-height: 420px; overflow-y: auto;
+    margin-bottom: 1rem; display: flex; flex-direction: column; gap: 12px;
+  }
+  .chat-log::-webkit-scrollbar { width: 4px; }
+  .chat-log::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .chat-welcome { text-align: center; color: var(--muted); font-size: 13px; padding: 2rem 0; font-family: 'DM Mono', monospace; line-height: 1.8; }
+
+  .chat-msg { display: flex; gap: 10px; animation: fadeUp 0.3s ease; }
+  .chat-msg.user { flex-direction: row-reverse; }
+
+  .chat-avatar { width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 13px; flex-shrink: 0; margin-top: 2px; }
+  .chat-avatar.user-av { background: var(--surface2); border: 1px solid var(--border); }
+  .chat-avatar.ai-av { background: linear-gradient(135deg, var(--accent), var(--accent2)); }
+
+  .chat-bubble { max-width: 80%; padding: 10px 14px; border-radius: 14px; font-size: 13px; line-height: 1.7; white-space: pre-wrap; word-break: break-word; }
+  .chat-bubble.user-bubble { background: rgba(255,60,110,0.15); border: 1px solid rgba(255,60,110,0.2); color: var(--text); border-radius: 14px 14px 4px 14px; }
+  .chat-bubble.ai-bubble { background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: 14px 14px 14px 4px; }
+
+  .chat-cursor { display: inline-block; width: 2px; height: 13px; background: var(--accent); vertical-align: middle; margin-left: 2px; animation: blink 0.8s infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+  .chat-input-row { display: flex; gap: 8px; align-items: flex-end; }
+  .chat-input-row textarea { flex: 1; min-height: 44px; max-height: 120px; resize: none; border-radius: 12px; font-size: 13px; padding: 12px 14px; line-height: 1.5; }
+  .chat-send-btn { width: 44px; height: 44px; border-radius: 12px; border: none; background: linear-gradient(135deg, var(--accent), var(--accent2)); color: white; font-size: 18px; cursor: pointer; flex-shrink: 0; transition: opacity 0.15s, transform 0.1s; }
+  .chat-send-btn:hover { opacity: 0.85; }
+  .chat-send-btn:active { transform: scale(0.95); }
+  .chat-send-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  @keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="header">
+    <div class="badge">⚡ Powered by Ollama — 100% Local</div>
+    <h1>Rizz Rater</h1>
+    <p class="subtitle">Rate your rizz. Get coached. Level up. 🔥</p>
+  </div>
+
+  <div class="status-bar">
+    <div class="status-dot" id="statusDot"></div>
+    <span class="status-text" id="statusText">Checking Ollama...</span>
+    <select class="model-select" id="modelSelect">
+      <option value="llama3">llama3</option>
+    </select>
+  </div>
+
+  <div class="hint">
+    <strong>⚠️ Before you start</strong>
+    Ollama blocks browser requests by default. Run this command once in your terminal:<br>
+    <code>OLLAMA_ORIGINS=* ollama serve</code><br>
+    Or on Windows: set <code>OLLAMA_ORIGINS=*</code> as an environment variable then restart Ollama.
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab-btn active" id="tabRater" onclick="switchTab('rater')">🔥 Rizz Rater</button>
+    <button class="tab-btn" id="tabChat" onclick="switchTab('chat')">💬 Rizz Coach</button>
+  </div>
+
+  <!-- ===== RATER SECTION ===== -->
+  <div class="rater-section" id="raterSection">
+
+    <div class="card">
+      <div class="card-label">01 — Your Conversation</div>
+      <div class="format-hint">
+        You: hey what are you up to<br>
+        Them: just chilling hbu<br>
+        You: thinking about you ngl<br>
+        Them: haha really 👀
+      </div>
+      <textarea id="convo" placeholder="Paste your conversation here in You / Them format..."></textarea>
+      <div class="row">
+        <div class="col">
+          <div class="col-label">Context</div>
+          <select id="context">
+            <option value="dating app">Dating app</option>
+            <option value="Instagram DMs">Instagram DMs</option>
+            <option value="met in person then texted">Met in person</option>
+            <option value="mutual friends">Mutual friends</option>
+            <option value="online">Online / other</option>
+          </select>
+        </div>
+        <div class="col">
+          <div class="col-label">Your Goal</div>
+          <select id="goal">
+            <option value="get a date">Get a date</option>
+            <option value="keep them interested">Keep them interested</option>
+            <option value="move to another platform">Move platforms</option>
+            <option value="just vibing">Just vibing</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="animation-delay:0.25s">
+      <div class="card-label">02 — Feedback Vibe</div>
+      <div class="vibes" id="vibes">
+        <button class="vibe active" data-v="brutally honest">💀 Brutal</button>
+        <button class="vibe" data-v="supportive coach">🤝 Supportive</button>
+        <button class="vibe" data-v="funny and savage">😂 Savage</button>
+        <button class="vibe" data-v="detailed and analytical">🔬 Analytical</button>
+      </div>
+    </div>
+
+    <button class="rate-btn" id="rateBtn" onclick="rateRizz()">
+      <span class="shimmer"></span>
+      Rate My Rizz 🔥
+    </button>
+
+    <div class="error-box" id="errorBox"></div>
+    <div class="loading" id="loading">
+      <div class="loading-dots"><span></span><span></span><span></span></div>
+      <div class="loading-msg" id="loadingMsg">Analyzing your rizz...</div>
+    </div>
+
+    <div class="result-card" id="resultCard">
+      <div class="score-ring">
+        <div><span class="score-num" id="scoreNum">—</span><span class="score-denom">/10</span></div>
+        <div class="score-label">RIZZ SCORE</div>
+      </div>
+      <div class="verdict" id="verdict"></div>
+      <div class="streaming-text" id="streamingText"></div>
+    </div>
+
+  </div><!-- end rater section -->
+
+  <!-- ===== CHAT SECTION ===== -->
+  <div class="chat-section" id="chatSection">
+
+    <div class="card" style="margin-bottom:1rem; animation-delay:0s;">
+      <div class="card-label">💬 Ask your rizz coach anything</div>
+      <div class="quick-asks">
+        <button class="quick-ask" onclick="quickAsk(this)">What should I reply to this?</button>
+        <button class="quick-ask" onclick="quickAsk(this)">Give me 3 flirty message options</button>
+        <button class="quick-ask" onclick="quickAsk(this)">How do I ask for her number?</button>
+        <button class="quick-ask" onclick="quickAsk(this)">Am I being too eager?</button>
+        <button class="quick-ask" onclick="quickAsk(this)">How do I ask for a date smoothly?</button>
+        <button class="quick-ask" onclick="quickAsk(this)">Rate this message I want to send</button>
+        <button class="quick-ask" onclick="quickAsk(this)">She left me on read, what now?</button>
+        <button class="quick-ask" onclick="quickAsk(this)">How to keep the conversation going?</button>
+      </div>
+    </div>
+
+    <div class="chat-log" id="chatLog">
+      <div class="chat-welcome" id="chatWelcome">
+        🔥 Your personal rizz coach is ready<br><br>
+        Ask anything — "what should I reply?", "give me 3 options",<br>
+        "is this too forward?", "how do I get her number?"
+      </div>
+    </div>
+
+    <div class="chat-input-row">
+      <textarea id="chatInput" placeholder="Ask anything... e.g. 'she said haha ok what do I reply?'" rows="1"
+        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat()}"
+        oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px'"></textarea>
+      <button class="chat-send-btn" id="chatSendBtn" onclick="sendChat()">↑</button>
+    </div>
+
+  </div><!-- end chat section -->
+
+</div>
+
+<script>
+  let selectedVibe = 'brutally honest';
+  let chatHistory = [];
+  let isChatting = false;
+
+  // ---- Tab switching ----
+  function switchTab(tab) {
+    document.getElementById('raterSection').classList.toggle('hide', tab === 'chat');
+    document.getElementById('chatSection').classList.toggle('show', tab === 'chat');
+    document.getElementById('tabRater').classList.toggle('active', tab === 'rater');
+    document.getElementById('tabChat').classList.toggle('active', tab === 'chat');
+    if (tab === 'chat') document.getElementById('chatInput').focus();
+  }
+
+  // ---- Vibes ----
+  document.querySelectorAll('.vibe').forEach(v => {
+    v.addEventListener('click', () => {
+      document.querySelectorAll('.vibe').forEach(x => x.classList.remove('active'));
+      v.classList.add('active');
+      selectedVibe = v.dataset.v;
+    });
+  });
+
+  // ---- Ollama status ----
+  async function checkOllama() {
+    try {
+      const res = await fetch('http://localhost:11434/api/tags', { signal: AbortSignal.timeout(3000) });
+      if (res.ok) {
+        const data = await res.json();
+        document.getElementById('statusDot').className = 'status-dot online';
+        document.getElementById('statusText').innerHTML = `Ollama <span>online</span> — ${data.models?.length || 0} models`;
+        if (data.models?.length) {
+          const sel = document.getElementById('modelSelect');
+          sel.innerHTML = '';
+          data.models.forEach(m => {
+            const opt = document.createElement('option');
+            opt.value = m.name;
+            opt.textContent = m.name;
+            sel.appendChild(opt);
+          });
+        }
+      }
+    } catch {
+      document.getElementById('statusDot').className = 'status-dot offline';
+      document.getElementById('statusText').innerHTML = `Ollama <span style="color:var(--red)">offline</span> — run: ollama serve`;
+    }
+  }
+
+  // ---- Rizz Rater ----
+  const loadingMsgs = ["Analyzing your rizz...","Studying your moves...","Calculating cringe levels...","Consulting the rizz oracle...","Running smooth-o-meter..."];
+
+  async function rateRizz() {
+    const convo = document.getElementById('convo').value.trim();
+    if (!convo) { alert('Paste your conversation first!'); return; }
+    const model = document.getElementById('modelSelect').value;
+    const context = document.getElementById('context').value;
+    const goal = document.getElementById('goal').value;
+    const btn = document.getElementById('rateBtn');
+    const loading = document.getElementById('loading');
+    const resultCard = document.getElementById('resultCard');
+    const errorBox = document.getElementById('errorBox');
+    const loadingMsg = document.getElementById('loadingMsg');
+
+    btn.disabled = true;
+    loading.classList.add('show');
+    resultCard.style.display = 'none';
+    errorBox.style.display = 'none';
+
+    let msgIdx = 0;
+    const msgInterval = setInterval(() => { loadingMsg.textContent = loadingMsgs[msgIdx++ % loadingMsgs.length]; }, 2000);
+
+    const prompt = `You are a ${selectedVibe} rizz coach rating a flirty conversation.
+Context: ${context}
+Goal: ${goal}
+Conversation:
+${convo}
+
+Give feedback in this exact format:
+SCORE: [number 1-10]
+VERDICT: [one punchy sentence about the overall vibe]
+WHAT WORKED:
+• [specific thing from the convo]
+• [specific thing from the convo]
+• [specific thing from the convo]
+WHAT FLOPPED:
+• [specific thing from the convo]
+• [specific thing from the convo]
+BIGGEST MISTAKE:
+[one paragraph, be direct and specific]
+HOW TO FIX IT:
+• [concrete tip]
+• [concrete tip]
+• [concrete tip]
+FINAL VERDICT:
+[2 sentences on where this conversation is heading based on the goal]
+Be specific, reference actual lines. Don't be vague.`;
+
+    try {
+      const res = await fetch('http://localhost:11434/api/generate', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model, prompt, stream: true })
+      });
+      if (!res.ok) throw new Error(`Ollama error: ${res.status}`);
+      clearInterval(msgInterval);
+      loading.classList.remove('show');
+      resultCard.style.display = 'block';
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let fullText = '';
+      document.getElementById('scoreNum').textContent = '...';
+      document.getElementById('verdict').textContent = '';
+      document.getElementById('streamingText').textContent = '';
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const lines = decoder.decode(value).split('\n').filter(Boolean);
+        for (const line of lines) {
+          try {
+            const json = JSON.parse(line);
+            if (json.response) { fullText += json.response; parseAndRender(fullText); }
+          } catch {}
+        }
+      }
+    } catch (err) {
+      clearInterval(msgInterval);
+      loading.classList.remove('show');
+      errorBox.style.display = 'block';
+      errorBox.innerHTML = `❌ Could not connect to Ollama.<br><br>Make sure:<br>1. Ollama is running: <code>ollama serve</code><br>2. CORS is enabled: <code>OLLAMA_ORIGINS=* ollama serve</code><br>3. You have a model: <code>ollama pull llama3</code><br><br>Error: ${err.message}`;
+    }
+    btn.disabled = false;
+  }
+
+  function parseAndRender(text) {
+    const scoreMatch = text.match(/SCORE:\s*(\d+)/);
+    if (scoreMatch) document.getElementById('scoreNum').textContent = scoreMatch[1];
+    const verdictMatch = text.match(/VERDICT:\s*(.+?)(?:\n|$)/);
+    if (verdictMatch) document.getElementById('verdict').textContent = verdictMatch[1].trim();
+    const afterVerdict = text.replace(/SCORE:.*\n?/, '').replace(/VERDICT:.*\n?/, '').trim();
+    document.getElementById('streamingText').textContent = afterVerdict;
+  }
+
+  // ---- Rizz Coach Chat ----
+  function quickAsk(btn) {
+    document.getElementById('chatInput').value = btn.textContent;
+    sendChat();
+  }
+
+  function addChatMsg(role, text, streaming = false) {
+    const log = document.getElementById('chatLog');
+    const welcome = document.getElementById('chatWelcome');
+    if (welcome) welcome.remove();
+
+    const msg = document.createElement('div');
+    msg.className = `chat-msg ${role}`;
+
+    const avatar = document.createElement('div');
+    avatar.className = `chat-avatar ${role === 'user' ? 'user-av' : 'ai-av'}`;
+    avatar.textContent = role === 'user' ? '👤' : '🔥';
+
+    const bubble = document.createElement('div');
+    bubble.className = `chat-bubble ${role === 'user' ? 'user-bubble' : 'ai-bubble'}`;
+    bubble.innerHTML = streaming ? '<span class="chat-cursor"></span>' : text;
+    if (streaming) bubble.id = 'streamingBubble';
+
+    msg.appendChild(avatar);
+    msg.appendChild(bubble);
+    log.appendChild(msg);
+    log.scrollTop = log.scrollHeight;
+    return bubble;
+  }
+
+  async function sendChat() {
+    const input = document.getElementById('chatInput');
+    const text = input.value.trim();
+    if (!text || isChatting) return;
+
+    input.value = '';
+    input.style.height = 'auto';
+    const model = document.getElementById('modelSelect').value;
+
+    addChatMsg('user', text);
+    chatHistory.push({ role: 'user', content: text });
+
+    isChatting = true;
+    document.getElementById('chatSendBtn').disabled = true;
+
+    const bubble = addChatMsg('ai', '', true);
+    let fullResponse = '';
+
+    const systemPrompt = `You are a fun, confident, and savvy rizz coach helping someone improve their flirting and dating conversations. Give practical, specific advice. When asked for message suggestions, give 2-3 clear options labeled Option 1, Option 2, Option 3. Be encouraging but honest. Keep responses concise and actionable.`;
+
+    try {
+      const res = await fetch('http://localhost:11434/api/chat', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            ...chatHistory
+          ],
+          stream: true
+        })
+      });
+
+      if (!res.ok) throw new Error(`Ollama error: ${res.status}`);
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const lines = decoder.decode(value).split('\n').filter(Boolean);
+        for (const line of lines) {
+          try {
+            const json = JSON.parse(line);
+            if (json.message?.content) {
+              fullResponse += json.message.content;
+              bubble.innerHTML = fullResponse + '<span class="chat-cursor"></span>';
+              document.getElementById('chatLog').scrollTop = document.getElementById('chatLog').scrollHeight;
+            }
+          } catch {}
+        }
+      }
+
+      bubble.innerHTML = fullResponse;
+      chatHistory.push({ role: 'assistant', content: fullResponse });
+
+    } catch (err) {
+      bubble.innerHTML = `❌ Error: ${err.message}<br>Make sure Ollama is running with CORS enabled.`;
+    }
+
+    isChatting = false;
+    document.getElementById('chatSendBtn').disabled = false;
+    input.focus();
+  }
+
+  checkOllama();
+</script>
+</body>
+</html>
