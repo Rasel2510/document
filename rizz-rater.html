@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rizz Rater 🔥</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0a0a0f;
+    --surface: #13131a;
+    --surface2: #1c1c28;
+    --border: #2a2a3d;
+    --accent: #ff3c6e;
+    --accent2: #ff8c42;
+    --gold: #ffd166;
+    --text: #f0f0f8;
+    --muted: #7070a0;
+    --green: #06d6a0;
+    --red: #ef233c;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Animated background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(ellipse at 20% 20%, rgba(255,60,110,0.08) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 80%, rgba(255,140,66,0.06) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 4rem;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Header */
+  .header {
+    text-align: center;
+    margin-bottom: 3rem;
+    animation: fadeUp 0.6s ease both;
+  }
+
+  .header .badge {
+    display: inline-block;
+    background: rgba(255,60,110,0.15);
+    border: 1px solid rgba(255,60,110,0.3);
+    color: var(--accent);
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    padding: 5px 14px;
+    border-radius: 999px;
+    margin-bottom: 1rem;
+  }
+
+  h1 {
+    font-size: clamp(2.5rem, 8vw, 4rem);
+    font-weight: 800;
+    line-height: 1;
+    background: linear-gradient(135deg, #ff3c6e, #ff8c42, #ffd166);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 0.75rem;
+  }
+
+  .subtitle {
+    color: var(--muted);
+    font-size: 15px;
+    font-weight: 400;
+  }
+
+  /* Ollama status */
+  .status-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 16px;
+    margin-bottom: 2rem;
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    animation: fadeUp 0.6s 0.1s ease both;
+  }
+
+  .status-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--muted);
+    flex-shrink: 0;
+    transition: background 0.3s;
+  }
+  .status-dot.online { background: var(--green); box-shadow: 0 0 8px var(--green); animation: pulse 2s infinite; }
+  .status-dot.offline { background: var(--red); }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+
+  .status-text { color: var(--muted); }
+  .status-text span { color: var(--text); }
+
+  .model-select {
+    margin-left: auto;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    padding: 5px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    outline: none;
+  }
+
+  /* Card */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 1.75rem;
+    margin-bottom: 1.25rem;
+    animation: fadeUp 0.6s 0.2s ease both;
+  }
+
+  .card-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  textarea {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    line-height: 1.7;
+    padding: 14px 16px;
+    resize: vertical;
+    min-height: 140px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  textarea:focus { border-color: rgba(255,60,110,0.4); }
+  textarea::placeholder { color: var(--muted); }
+
+  .row { display: flex; gap: 12px; margin-top: 12px; }
+  .col { flex: 1; }
+
+  .col-label {
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 6px;
+    font-family: 'DM Mono', monospace;
+  }
+
+  select {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    padding: 10px 12px;
+    outline: none;
+    cursor: pointer;
+    transition: border-color 0.2s;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%237070a0' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+  }
+  select:focus { border-color: rgba(255,60,110,0.4); }
+
+  /* Vibe pills */
+  .vibes { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .vibe {
+    padding: 7px 16px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--muted);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'Syne', sans-serif;
+  }
+  .vibe:hover { border-color: var(--accent); color: var(--text); }
+  .vibe.active {
+    background: rgba(255,60,110,0.15);
+    border-color: var(--accent);
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  /* Rate button */
+  .rate-btn {
+    width: 100%;
+    padding: 16px;
+    border-radius: 14px;
+    border: none;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: white;
+    font-family: 'Syne', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 1.25rem;
+    letter-spacing: 0.03em;
+    transition: opacity 0.2s, transform 0.1s;
+    animation: fadeUp 0.6s 0.3s ease both;
+    position: relative;
+    overflow: hidden;
+  }
+  .rate-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+  .rate-btn:active { transform: translateY(0); }
+  .rate-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  .rate-btn .shimmer {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+    transform: translateX(-100%);
+    animation: shimmer 2s infinite;
+  }
+  @keyframes shimmer { to { transform: translateX(200%); } }
+
+  /* Result */
+  .result-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 2rem;
+    margin-top: 1.5rem;
+    display: none;
+    animation: fadeUp 0.5s ease both;
+  }
+
+  .score-ring {
+    text-align: center;
+    margin-bottom: 1.75rem;
+  }
+
+  .score-num {
+    font-size: 5rem;
+    font-weight: 800;
+    line-height: 1;
+    background: linear-gradient(135deg, #ff3c6e, #ff8c42);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .score-denom {
+    font-size: 1.5rem;
+    color: var(--muted);
+    font-weight: 400;
+  }
+
+  .score-label {
+    font-size: 13px;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    margin-top: 4px;
+  }
+
+  .verdict {
+    background: var(--surface2);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 10px 10px 0;
+    padding: 12px 16px;
+    font-size: 14px;
+    line-height: 1.6;
+    margin-bottom: 1.5rem;
+    font-style: italic;
+    color: var(--text);
+  }
+
+  .section-title {
+    font-size: 11px;
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .section-title.good { color: var(--green); }
+  .section-title.bad { color: var(--red); }
+  .section-title.neutral { color: var(--gold); }
+
+  .feedback-item {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+    font-size: 14px;
+    line-height: 1.6;
+    color: #c0c0e0;
+  }
+  .feedback-item .icon { flex-shrink: 0; margin-top: 2px; }
+
+  .result-section { margin-bottom: 1.5rem; }
+
+  .streaming-text {
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    line-height: 1.8;
+    color: #c0c0e0;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  /* Loading */
+  .loading {
+    display: none;
+    text-align: center;
+    padding: 2rem;
+    margin-top: 1.5rem;
+  }
+  .loading.show { display: block; }
+
+  .loading-dots {
+    display: inline-flex;
+    gap: 6px;
+    margin-bottom: 1rem;
+  }
+  .loading-dots span {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    animation: bounce 1.2s infinite;
+  }
+  .loading-dots span:nth-child(2) { animation-delay: 0.2s; background: var(--accent2); }
+  .loading-dots span:nth-child(3) { animation-delay: 0.4s; background: var(--gold); }
+  @keyframes bounce { 0%,80%,100% { transform: scale(0.6); opacity: 0.4; } 40% { transform: scale(1); opacity: 1; } }
+
+  .loading-msg { color: var(--muted); font-size: 14px; font-family: 'DM Mono', monospace; }
+
+  /* Error */
+  .error-box {
+    background: rgba(239,35,60,0.1);
+    border: 1px solid rgba(239,35,60,0.3);
+    border-radius: 12px;
+    padding: 14px 16px;
+    color: #ff6b80;
+    font-size: 13px;
+    font-family: 'DM Mono', monospace;
+    margin-top: 1rem;
+    display: none;
+    line-height: 1.6;
+  }
+
+  /* Hint */
+  .hint {
+    background: rgba(255,209,102,0.08);
+    border: 1px solid rgba(255,209,102,0.2);
+    border-radius: 12px;
+    padding: 14px 16px;
+    font-size: 13px;
+    color: var(--gold);
+    font-family: 'DM Mono', monospace;
+    margin-bottom: 1.5rem;
+    line-height: 1.7;
+    animation: fadeUp 0.6s 0.15s ease both;
+  }
+  .hint strong { display: block; margin-bottom: 4px; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Format hint */
+  .format-hint {
+    background: var(--surface2);
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.8;
+    margin-bottom: 10px;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="header">
+    <div class="badge">⚡ Powered by Ollama — 100% Local</div>
+    <h1>Rizz Rater</h1>
+    <p class="subtitle">Paste your convo. Get brutally honest feedback. Level up.</p>
+  </div>
+
+  <div class="status-bar">
+    <div class="status-dot" id="statusDot"></div>
+    <span class="status-text" id="statusText">Checking Ollama...</span>
+    <select class="model-select" id="modelSelect">
+      <option value="llama3">llama3</option>
+      <option value="llama3.2">llama3.2</option>
+      <option value="mistral">mistral</option>
+      <option value="gemma2">gemma2</option>
+      <option value="phi3">phi3</option>
+      <option value="deepseek-r1">deepseek-r1</option>
+    </select>
+  </div>
+
+  <div class="hint">
+    <strong>⚠️ Before you start</strong>
+    Ollama blocks browser requests by default. Run this command once in your terminal:<br>
+    <code>OLLAMA_ORIGINS=* ollama serve</code><br>
+    Or on Windows: set <code>OLLAMA_ORIGINS=*</code> as an environment variable then restart Ollama.
+  </div>
+
+  <div class="card">
+    <div class="card-label">01 — Your Conversation</div>
+    <div class="format-hint">
+      You: hey what are you up to<br>
+      Them: just chilling hbu<br>
+      You: thinking about you ngl<br>
+      Them: haha really 👀
+    </div>
+    <textarea id="convo" placeholder="Paste your conversation here in You / Them format..."></textarea>
+
+    <div class="row">
+      <div class="col">
+        <div class="col-label">Context</div>
+        <select id="context">
+          <option value="dating app">Dating app</option>
+          <option value="Instagram DMs">Instagram DMs</option>
+          <option value="met in person then texted">Met in person</option>
+          <option value="mutual friends">Mutual friends</option>
+          <option value="online">Online / other</option>
+        </select>
+      </div>
+      <div class="col">
+        <div class="col-label">Your Goal</div>
+        <select id="goal">
+          <option value="get a date">Get a date</option>
+          <option value="keep them interested">Keep them interested</option>
+          <option value="move to another platform">Move platforms</option>
+          <option value="just vibing">Just vibing</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="animation-delay:0.25s">
+    <div class="card-label">02 — Feedback Vibe</div>
+    <div class="vibes" id="vibes">
+      <button class="vibe active" data-v="brutally honest">💀 Brutal</button>
+      <button class="vibe" data-v="supportive coach">🤝 Supportive</button>
+      <button class="vibe" data-v="funny and savage">😂 Savage</button>
+      <button class="vibe" data-v="detailed and analytical">🔬 Analytical</button>
+    </div>
+  </div>
+
+  <button class="rate-btn" id="rateBtn" onclick="rateRizz()">
+    <span class="shimmer"></span>
+    Rate My Rizz 🔥
+  </button>
+
+  <div class="error-box" id="errorBox"></div>
+
+  <div class="loading" id="loading">
+    <div class="loading-dots"><span></span><span></span><span></span></div>
+    <div class="loading-msg" id="loadingMsg">Analyzing your rizz...</div>
+  </div>
+
+  <div class="result-card" id="resultCard">
+    <div class="score-ring">
+      <div><span class="score-num" id="scoreNum">—</span><span class="score-denom">/10</span></div>
+      <div class="score-label" id="scoreLabel">RIZZ SCORE</div>
+    </div>
+    <div class="verdict" id="verdict"></div>
+    <div class="streaming-text" id="streamingText"></div>
+  </div>
+
+</div>
+
+<script>
+  let selectedVibe = 'brutally honest';
+
+  document.querySelectorAll('.vibe').forEach(v => {
+    v.addEventListener('click', () => {
+      document.querySelectorAll('.vibe').forEach(x => x.classList.remove('active'));
+      v.classList.add('active');
+      selectedVibe = v.dataset.v;
+    });
+  });
+
+  const loadingMsgs = [
+    "Analyzing your rizz...",
+    "Studying your moves...",
+    "Calculating cringe levels...",
+    "Consulting the rizz oracle...",
+    "Running smooth-o-meter...",
+  ];
+
+  async function checkOllama() {
+    try {
+      const res = await fetch('http://localhost:11434/api/tags', { signal: AbortSignal.timeout(3000) });
+      if (res.ok) {
+        const data = await res.json();
+        document.getElementById('statusDot').className = 'status-dot online';
+        document.getElementById('statusText').innerHTML = `Ollama <span>online</span> — ${data.models?.length || 0} models`;
+        if (data.models?.length) {
+          const sel = document.getElementById('modelSelect');
+          sel.innerHTML = '';
+          data.models.forEach(m => {
+            const opt = document.createElement('option');
+            opt.value = m.name;
+            opt.textContent = m.name;
+            sel.appendChild(opt);
+          });
+        }
+      }
+    } catch {
+      document.getElementById('statusDot').className = 'status-dot offline';
+      document.getElementById('statusText').innerHTML = `Ollama <span style="color:var(--red)">offline</span> — run: ollama serve`;
+    }
+  }
+
+  async function rateRizz() {
+    const convo = document.getElementById('convo').value.trim();
+    if (!convo) { alert('Paste your conversation first!'); return; }
+
+    const model = document.getElementById('modelSelect').value;
+    const context = document.getElementById('context').value;
+    const goal = document.getElementById('goal').value;
+
+    const btn = document.getElementById('rateBtn');
+    const loading = document.getElementById('loading');
+    const resultCard = document.getElementById('resultCard');
+    const errorBox = document.getElementById('errorBox');
+    const loadingMsg = document.getElementById('loadingMsg');
+
+    btn.disabled = true;
+    loading.classList.add('show');
+    resultCard.style.display = 'none';
+    errorBox.style.display = 'none';
+
+    let msgIdx = 0;
+    const msgInterval = setInterval(() => {
+      loadingMsg.textContent = loadingMsgs[msgIdx % loadingMsgs.length];
+      msgIdx++;
+    }, 2000);
+
+    const prompt = `You are a ${selectedVibe} rizz coach rating a flirty conversation.
+
+Context: ${context}
+Goal: ${goal}
+
+Conversation:
+${convo}
+
+Give feedback in this exact format:
+
+SCORE: [number 1-10]
+VERDICT: [one punchy sentence about the overall vibe]
+
+WHAT WORKED:
+• [specific thing from the convo]
+• [specific thing from the convo]
+• [specific thing from the convo]
+
+WHAT FLOPPED:
+• [specific thing from the convo]
+• [specific thing from the convo]
+
+BIGGEST MISTAKE:
+[one paragraph, be direct and specific]
+
+HOW TO FIX IT:
+• [concrete tip]
+• [concrete tip]
+• [concrete tip]
+
+FINAL VERDICT:
+[2 sentences on where this conversation is heading based on the goal]
+
+Be specific, reference actual lines. Don't be vague.`;
+
+    try {
+      const res = await fetch('http://localhost:11434/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model, prompt, stream: true })
+      });
+
+      if (!res.ok) throw new Error(`Ollama error: ${res.status}`);
+
+      clearInterval(msgInterval);
+      loading.classList.remove('show');
+      resultCard.style.display = 'block';
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let fullText = '';
+
+      document.getElementById('scoreNum').textContent = '...';
+      document.getElementById('verdict').textContent = '';
+      document.getElementById('streamingText').textContent = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n').filter(Boolean);
+        for (const line of lines) {
+          try {
+            const json = JSON.parse(line);
+            if (json.response) {
+              fullText += json.response;
+              parseAndRender(fullText);
+            }
+          } catch {}
+        }
+      }
+
+    } catch (err) {
+      clearInterval(msgInterval);
+      loading.classList.remove('show');
+      errorBox.style.display = 'block';
+      errorBox.innerHTML = `❌ Could not connect to Ollama.<br><br>
+Make sure:<br>
+1. Ollama is running: <code>ollama serve</code><br>
+2. CORS is enabled: <code>OLLAMA_ORIGINS=* ollama serve</code><br>
+3. You have a model: <code>ollama pull llama3</code><br><br>
+Error: ${err.message}`;
+    }
+
+    btn.disabled = false;
+  }
+
+  function parseAndRender(text) {
+    const scoreMatch = text.match(/SCORE:\s*(\d+)/);
+    if (scoreMatch) document.getElementById('scoreNum').textContent = scoreMatch[1];
+
+    const verdictMatch = text.match(/VERDICT:\s*(.+?)(?:\n|$)/);
+    if (verdictMatch) document.getElementById('verdict').textContent = verdictMatch[1].trim();
+
+    // Show everything after VERDICT as streaming text
+    const afterVerdict = text.replace(/SCORE:.*\n?/, '').replace(/VERDICT:.*\n?/, '').trim();
+    document.getElementById('streamingText').textContent = afterVerdict;
+  }
+
+  checkOllama();
+</script>
+</body>
+</html>
