@@ -21,7 +21,7 @@ def to_snake(name):
 # TEMPLATES
 # ──────────────────────────────────────────────
 
-def gen_api(method, feature_snake, class_prefix, params, is_multipart):
+def gen_api_single(method, feature_snake, class_prefix, params, is_multipart):
     param_declarations = '\n'.join([f"    required dynamic {p}," for p in params])
     param_signature    = f"{{\n{param_declarations}\n  }}" if params else ""
 
@@ -66,6 +66,50 @@ class {class_prefix}Api extends BaseApi {{
       call(
         {request_block}
         fromJson: (json) => {class_prefix}Model.fromJson(json),
+      );
+}}
+"""
+
+
+def gen_api_paginated(feature_snake, class_prefix, params):
+    extra_param_declarations = '\n'.join([f"    required dynamic {p}," for p in params])
+    extra_param_signature    = f"\n{extra_param_declarations}\n    " if params else ""
+    extra_param_query        = ', '.join([f"'{p}': {p}" for p in params])
+    query_params             = "{'page': page, 'limit': limit" + (f", {extra_param_query}" if params else "") + "}"
+
+    return f"""import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:{APP_PACKAGE}/networks/base/base_api.dart';
+import 'package:{APP_PACKAGE}/networks/base/base_paginated_notifier.dart';
+import 'package:{APP_PACKAGE}/networks/dio/dio_singleton.dart';
+import 'package:{APP_PACKAGE}/networks/endpoints.dart';
+import '../model/{feature_snake}_model.dart';
+
+final {to_camel(feature_snake)}ApiProvider =
+    Provider<{class_prefix}Api>((ref) => {class_prefix}Api());
+
+class {class_prefix}Api extends BaseApi {{
+  Future<PaginatedResponse<{class_prefix}Model>> {to_camel(feature_snake)}({{
+    required int page,
+    int limit = 10,{extra_param_signature}
+  }}) =>
+      call(
+        request: () => getHttp(
+          Endpoints.{to_camel(feature_snake)}(),
+          queryParams: {query_params},
+        ),
+        fromJson: (json) {{
+          final data = json['data'] as Map<String, dynamic>;
+          return PaginatedResponse<{class_prefix}Model>(
+            items: (data['{to_camel(feature_snake)}'] as List<dynamic>)
+                .map((e) => {class_prefix}Model.fromJson(e as Map<String, dynamic>))
+                .toList(),
+            // Adjust to match your API response:
+            // data['hasMore']                          -> bool field
+            // data['page'] < data['totalPages']        -> page comparison
+            // (data['{to_camel(feature_snake)}'] as List).length == limit -> length check
+            hasMore: data['hasMore'] as bool? ?? false,
+          );
+        }},
       );
 }}
 """
@@ -119,6 +163,45 @@ class {class_prefix}Notifier extends BaseAsyncNotifier<void> {{
         await ref.read({to_camel(feature_snake)}ApiProvider).{to_camel(feature_snake)}{param_call};
       }});
 }}
+"""
+
+
+def gen_notifier_paginated(feature_snake, class_prefix, params):
+    field_declarations = '\n'.join([f"  dynamic _{p};" for p in params])
+    field_init         = '\n'.join([f"    _{p} = {p};" for p in params])
+    field_pass         = '\n'.join([f"        {p}: _{p}," for p in params])
+    extra_param_declarations = '\n'.join([f"    required dynamic {p}," for p in params])
+    extra_param_signature    = f"\n{extra_param_declarations}\n  " if params else ""
+
+    filter_method = f"""
+  // Call this to filter the list and reload from page 1
+  Future<void> filter({{{extra_param_signature}}}) async {{
+{field_init}
+    await refreshList();
+  }}
+""" if params else ""
+
+    api_call = f"page: page,\n{field_pass}" if params else "page: page,"
+
+    return f"""import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:{APP_PACKAGE}/networks/base/base_paginated_notifier.dart';
+import '../data/{feature_snake}_api.dart';
+import '../model/{feature_snake}_model.dart';
+
+final {to_camel(feature_snake)}Provider =
+    AsyncNotifierProvider<{class_prefix}Notifier, PaginatedState<{class_prefix}Model>>(
+  {class_prefix}Notifier.new,
+);
+
+class {class_prefix}Notifier extends PaginatedNotifier<{class_prefix}Model> {{
+{field_declarations}
+
+  @override
+  Future<PaginatedResponse<{class_prefix}Model>> fetchPage(int page) =>
+      ref.read({to_camel(feature_snake)}ApiProvider).{to_camel(feature_snake)}(
+        {api_call}
+      );
+{filter_method}}}
 """
 
 
@@ -227,6 +310,12 @@ def main():
     print("HTTP method (get / post / patch / put / delete): ", end="")
     method = input().strip().lower()
 
+    # Only ask for GET — post/put/patch/delete are always single actions
+    is_paginated = False
+    if method == 'get':
+        print("Response type (single / list): ", end="")
+        is_paginated = input().strip().lower() == 'list'
+
     print("Request params, comma separated (blank if none): ", end="")
     raw_params = input().strip()
     params = [p.strip() for p in raw_params.split(',')] if raw_params else []
@@ -246,15 +335,27 @@ def main():
     os.makedirs(data_dir, exist_ok=True)
     os.makedirs(notifier_dir, exist_ok=True)
 
-    # ── Generate 2 files ─────────────────────────────────────────────────────
-    is_get = method == 'get'
+    # ── Pick templates ────────────────────────────────────────────────────────
+    if is_paginated:
+        api_content      = gen_api_paginated(feature_snake, class_prefix, params)
+        notifier_content = gen_notifier_paginated(feature_snake, class_prefix, params)
+        notifier_type    = "PaginatedNotifier"
+    elif method == 'get':
+        api_content      = gen_api_single(method, feature_snake, class_prefix, params, is_multipart)
+        notifier_content = gen_notifier_get(feature_snake, class_prefix)
+        notifier_type    = "BaseAsyncNotifier (single)"
+    else:
+        api_content      = gen_api_single(method, feature_snake, class_prefix, params, is_multipart)
+        notifier_content = gen_notifier_post(feature_snake, class_prefix, params)
+        notifier_type    = "BaseAsyncNotifier (action)"
 
+    # ── Write files ───────────────────────────────────────────────────────────
     files = {
-        os.path.join(data_dir,     f"{feature_snake}_api.dart"):      gen_api(method, feature_snake, class_prefix, params, is_multipart),
-        os.path.join(notifier_dir, f"{feature_snake}_notifier.dart"): gen_notifier_get(feature_snake, class_prefix) if is_get else gen_notifier_post(feature_snake, class_prefix, params),
+        os.path.join(data_dir,     f"{feature_snake}_api.dart"):      api_content,
+        os.path.join(notifier_dir, f"{feature_snake}_notifier.dart"): notifier_content,
     }
 
-    print(f"\nGenerating files in: {output_root}")
+    print(f"\nGenerating [{notifier_type}] in: {output_root}")
     for path, content in files.items():
         with open(path, 'w', encoding='utf-8') as f:
             f.write(content)
@@ -286,8 +387,9 @@ def main():
     print("Done! Files created:")
     for path in files:
         print(f"  {os.path.relpath(path)}")
-    print(f"\nEndpoints.{to_camel(feature_snake)}()  ->  endpoints.dart")
-    print(f"Export added                        ->  api_access.dart")
+    print(f"\nNotifier type  :  {notifier_type}")
+    print(f"Endpoints      :  Endpoints.{to_camel(feature_snake)}()  ->  endpoints.dart")
+    print(f"Export         :  added to api_access.dart")
     print("=" * 55)
 
 
